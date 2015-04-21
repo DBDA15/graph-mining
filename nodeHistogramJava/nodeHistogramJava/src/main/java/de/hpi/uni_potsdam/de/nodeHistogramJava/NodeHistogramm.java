@@ -15,16 +15,20 @@ import scala.Tuple2;
 public class NodeHistogramm {
 	
 	static String SPLITCHARACTER = "\t";
-	static String outputFollower = "output/follower";
-	static String outputFollowing = "output/following";
-	static String outputAll = "output/all";
+//	static String outputFollower = "output/follower";
+//	static String outputFollowing = "output/following";
+//	static String outputAll = "output/all";
 	
 	public static void main(String[] args) {
+		final String input = args[0];
+		final String outputFollower = args[1];
+		final String outputFollowing = args[2];
+		final String outputCombined = args[3];
 		SparkConf conf = new SparkConf().setAppName("de.hpi.uni_potsdam.de.nodeHistogramJava.NodeHistogram");
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		File outputFollowerFile = new File(outputFollower);
 		File outputFollowingFile = new File(outputFollowing);
-		File outputAllFile = new File(outputAll);
+		File outputAllFile = new File(outputCombined);
 		try {
 			FileUtils.deleteDirectory(outputFollowerFile);
 			FileUtils.deleteDirectory(outputFollowingFile);
@@ -34,21 +38,21 @@ public class NodeHistogramm {
 		}
 
 		//follower
-		JavaPairRDD<String, Integer> followerCount =  calculateCounts(sc, 0);
+		JavaPairRDD<String, Integer> followerCount =  calculateCounts(sc, input, 0);
 		followerCount.saveAsTextFile(outputFollower);
 		
 		//following
-		JavaPairRDD<String, Integer> followingCount = calculateCounts(sc, 1);
+		JavaPairRDD<String, Integer> followingCount = calculateCounts(sc, input, 1);
 		followerCount.saveAsTextFile(outputFollowing); 
 		
 		//all
 		JavaPairRDD<String, Integer> follow = followingCount.union(followerCount);
 		JavaPairRDD<String, Integer> count = sum(follow);
-		count.saveAsTextFile(outputAll); 
+		count.saveAsTextFile(outputCombined); 
 	}
 
-	public static JavaPairRDD<String, Integer> calculateCounts(JavaSparkContext sc, final int type){
-		JavaRDD<String> lines = sc.textFile("../smallTwitter.txt");
+	public static JavaPairRDD<String, Integer> calculateCounts(JavaSparkContext sc, final String inputFile, final int type){
+		JavaRDD<String> lines = sc.textFile(inputFile);
 
 		JavaPairRDD<String, Integer> followerPairs = lines.mapToPair(new PairFunction<String, String, Integer>() {
 		  public Tuple2<String, Integer> call(String s) { 
