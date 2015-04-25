@@ -26,6 +26,8 @@ public class NodeHistogramm {
 		final String outputCombined = args[3];
 		SparkConf conf = new SparkConf().setAppName("de.hpi.uni_potsdam.de.nodeHistogramJava.NodeHistogram");
 		JavaSparkContext sc = new JavaSparkContext(conf);
+		
+		//delete dirs
 		File outputFollowerFile = new File(outputFollower);
 		File outputFollowingFile = new File(outputFollowing);
 		File outputAllFile = new File(outputCombined);
@@ -55,7 +57,9 @@ public class NodeHistogramm {
 		JavaRDD<String> lines = sc.textFile(inputFile);
 
 		JavaPairRDD<String, Integer> followerPairs = lines.mapToPair(new PairFunction<String, String, Integer>() {
-		  public Tuple2<String, Integer> call(String s) { 
+			private static final long serialVersionUID = 2035592311483698209L;
+
+		public Tuple2<String, Integer> call(String s) { 
 			  	return new Tuple2<String, Integer>(s.split(SPLITCHARACTER)[type], 1); 
 			  }
 		});
@@ -67,13 +71,9 @@ public class NodeHistogramm {
 	
 	public static JavaPairRDD<String, Integer> sum (JavaPairRDD<String, Integer> followPairs){
 		return followPairs.reduceByKey(new Function2<Integer, Integer, Integer>() {
-			  public Integer call(Integer a, Integer b) { return a + b; }
+			private static final long serialVersionUID = 9072894169891059255L;
+
+			public Integer call(Integer a, Integer b) { return a + b; }
 			});
 	}
-	
-
-
-	
-	
-	
 }
