@@ -1,6 +1,7 @@
 package de.hpi.uni_potsdam.de.nodeHistogramJava;
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -41,16 +42,19 @@ public class NodeHistogramm {
 
 		//follower
 		JavaPairRDD<String, Integer> followerCount =  calculateCounts(sc, input, 0);
-		followerCount.saveAsTextFile(outputFollower);
+		JavaPairRDD<Integer, Integer> followerHistogram = calculateHistogram(followerCount);
+		followerHistogram.saveAsTextFile(outputFollower);
 		
 		//following
 		JavaPairRDD<String, Integer> followingCount = calculateCounts(sc, input, 1);
-		followerCount.saveAsTextFile(outputFollowing); 
+		JavaPairRDD<Integer, Integer> followingHistogram = calculateHistogram(followingCount);
+		followingHistogram.saveAsTextFile(outputFollowing); 
 		
 		//all
 		JavaPairRDD<String, Integer> follow = followingCount.union(followerCount);
 		JavaPairRDD<String, Integer> count = sum(follow);
-		count.saveAsTextFile(outputCombined); 
+		JavaPairRDD<Integer, Integer> combinedHistogram = calculateHistogram(count);
+		combinedHistogram.saveAsTextFile(outputCombined); 
 	}
 
 	public static JavaPairRDD<String, Integer> calculateCounts(JavaSparkContext sc, final String inputFile, final int type){
@@ -76,4 +80,29 @@ public class NodeHistogramm {
 			public Integer call(Integer a, Integer b) { return a + b; }
 			});
 	}
+	
+	public static JavaPairRDD<Integer, Integer> sumInteger (JavaPairRDD<Integer, Integer> followPairs){
+		return followPairs.reduceByKey(new Function2<Integer, Integer, Integer>() {
+			private static final long serialVersionUID = 9072894169891059255L;
+
+			public Integer call(Integer a, Integer b) { return a + b; }
+			});
+	}
+	
+	public static JavaPairRDD<Integer, Integer> calculateHistogram(JavaPairRDD<String, Integer> pairs){
+
+		JavaPairRDD<Integer, Integer> mapresult= pairs.mapToPair(new PairFunction<Tuple2<String, Integer>, Integer, Integer>() {
+			private static final long serialVersionUID = 2035592311483698209L;
+
+		@Override
+		public Tuple2<Integer, Integer> call(Tuple2<String, Integer> t)
+				throws Exception {
+			return new Tuple2<Integer, Integer>(t._2, 1);
+		}
+		});
+		
+		return sumInteger(mapresult);
+		
+	}
+	
 }
