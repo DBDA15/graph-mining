@@ -5,27 +5,28 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 import org.apache.spark.rdd.RDD
 
-/**
- * Spark job solving the Shipping Priority Query (Q3) of the TPC-H benchmark partially.<br/>
- * <br/>
- * <b>Query:</b>
-<pre>
-select l.ORDERKEY, sum(EXTENDEDPRICE*(1-DISCOUNT)) as revenue
-  from
-    ORDERS o,
-    LINEITEM l
-    where
-      l.ORDERKEY = o.ORDERKEY
-      and ORDERDATE < date '[DATE]'
-      and SHIPDATE > date '[DATE]'
-      group by
-        l.ORDERKEY
-        order by
-          revenue desc
-</pre>
- */
 object NodeHistogram extends App {
-  print("hello World")
 
+  case class TwitterEntry(ID: Int, FollowerCount: Int, FollwingCount: Int) {
+    def this(ID: String, Pos: Int) =
+      this(ID.toInt, 1 - Pos, Pos)
+    def asTuple = (ID, this)
+  }
 
+  //print("hello World")
+
+  val inputPath = args(0)
+  val followerPath = args(1)
+  val followingPath = args(2)
+  val combinedPath = args(3)
+
+  val conf = new SparkConf()
+  conf.setAppName(NodeHistogram.getClass.getName)
+  conf.set("spark.hadoop.validateOutputSpecs", "false");
+  val context = new SparkContext(conf)
+
+  val twitterEntries =
+    context.textFile(inputPath)
+      .map(line => new TwitterEntry(line.split("\t")(0), 0))
+      //.map(line => new TwitterEntry(line.split("\t")(1), 1))
 }
