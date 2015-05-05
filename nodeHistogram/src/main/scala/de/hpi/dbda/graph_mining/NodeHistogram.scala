@@ -20,27 +20,28 @@ object NodeHistogram extends App {
   @Override
   override def main(args: Array[String]) {
     val inputPath = args(0)
-    calculateIncomingOutcomingCount(inputPath, args)
-  }
-
-  def convertToBidirectedGraph(inputPath: String): Unit ={
-    
-
-  }
-
-
-
-
-  def calculateIncomingOutcomingCount(inputPath:String, args: Array[String]): Unit = {
-
-    val followerPath = args(1)
-    val followingPath = args(2)
-    val combinedPath = args(3)
 
     val conf = new SparkConf()
     conf.setAppName(NodeHistogram.getClass.getName)
     conf.set("spark.hadoop.validateOutputSpecs", "false");
     val context = new SparkContext(conf)
+
+    calculateIncomingOutcomingCount(context, inputPath, args)
+  }
+
+  def convertToBidirectedGraph(context:SparkContext, inputPath: String): Unit ={
+    val output = args(1)
+    
+  }
+
+
+
+
+  def calculateIncomingOutcomingCount(context:SparkContext, inputPath:String, args: Array[String]): Unit = {
+
+    val followerPath = args(1)
+    val followingPath = args(2)
+    val combinedPath = args(3)
 
     val twitterEntries =
       context.textFile(inputPath)
