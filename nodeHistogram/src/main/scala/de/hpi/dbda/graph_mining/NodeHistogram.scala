@@ -7,6 +7,9 @@ import org.apache.spark.rdd.RDD
 
 object NodeHistogram extends App {
 
+  val splitCharacter_Twitter = "\t"
+  val splitCharacter_Wikipedia = " "
+
   case class TwitterEntry(id: Int, followerCount: Int, followingCount: Int) {
 
     def this(id: String, pos: Int) =
@@ -31,7 +34,7 @@ object NodeHistogram extends App {
 
   def convertToBidirectedGraph(context:SparkContext, inputPath: String): Unit ={
     val output = args(1)
-    
+
   }
 
 
