@@ -18,6 +18,17 @@ object NodeHistogram extends App {
     def asTuple = (id, this)
   }
 
+  case class Edge(id1: Int, id2: Int, follows: Int, followed: Int) {
+
+    def asTuple = (id1.toString + "\t" + id2.toString, this)
+
+    def add(other: Edge): Edge = {
+      val follows_ = follows + other.follows
+      val followed_ = followed + other.followed
+      new Edge(id1, id2, follows_, followed_)
+    }
+  }
+
   //print("hello World")
 
   @Override
@@ -29,14 +40,36 @@ object NodeHistogram extends App {
     conf.set("spark.hadoop.validateOutputSpecs", "false");
     val context = new SparkContext(conf)
 
-    calculateIncomingOutcomingCount(context, inputPath, args)
+    //calculateIncomingOutcomingCount(context, inputPath, args)
+    convertToBidirectedGraph(context, inputPath, args)
   }
 
-  def convertToBidirectedGraph(context:SparkContext, inputPath: String): Unit ={
+  def convertToBidirectedGraph(context:SparkContext, inputPath: String, args: Array[String]): Unit ={
     val output = args(1)
+    
+    val edges =
+      context.textFile(inputPath)
+        .flatMap(line => List(
+//        new Edge(0,0,0,0).apply(line.split("\t")(0).toInt,line.split("\t")(1).toInt).asTuple))
+       generateEdge(line.split("\t")(0).toInt,line.split("\t")(1).toInt).asTuple))
 
+    val summedEdges = edges.reduceByKey((edge1, edge2) =>
+      edge1.add(edge2))
+
+    def isBidirectional(inp: Edge) = inp.follows >= 1 && inp.followed >= 1
+    val bidirectionalEdges = summedEdges.filter(edge => isBidirectional(edge._2))
+
+    bidirectionalEdges.keys.saveAsTextFile(args(1))
   }
 
+  def generateEdge(id_1: Int, id_2: Int): Edge = {
+    val id1_ = if (id_1 < id_2) id_1 else id_2
+    val id2_ = if (id_1 < id_2) id_2 else id_1
+    val follows_ = if (id_1 < id_2) 0 else 1
+    val followed_ = if (id_1 < id_2) 1 else 0
+    val newEdge = new Edge(id1_, id2_, follows_, followed_)
+    newEdge
+  }
 
 
 
