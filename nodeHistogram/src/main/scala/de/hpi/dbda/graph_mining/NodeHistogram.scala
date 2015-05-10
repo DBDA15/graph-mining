@@ -48,7 +48,7 @@ object NodeHistogram extends App {
 
     if (mode.equals("cb"))
     //calculateIncomingOutcomingCount(context, inputPath, args)
-      convertToBidirectedGraph(context, inputPath, args)
+      convertToBidirectedGraph(context, inputPath, outputPath)
 
     if (mode.equals("t"))
       Triangles.getTriangles(context.textFile(inputPath), outputPath)
