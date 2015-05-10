@@ -1,5 +1,6 @@
 package de.hpi.dbda.graph_mining
 
+import de.hpi.fgis.tpch.NodeHistogram
 import org.apache.spark.rdd.RDD
 
 /**
@@ -11,7 +12,7 @@ object Triangles {
   }
 
   def convertGraph(rawGraph: RDD[String]): RDD[Edge] ={
-    rawGraph.map(line => createEdge(line.split("\t")(0).toInt, line.split("\t")(1).toInt))
+    rawGraph.map(line => createEdge(line.split(NodeHistogram.seperator)(0).toInt, line.split(NodeHistogram.seperator)(1).toInt))
   }
 
   def getTriangles(rawGraph:RDD[String], outputDir:String): Unit ={
