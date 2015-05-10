@@ -1,6 +1,5 @@
 package de.hpi.dbda.graph_mining
 
-import de.hpi.fgis.tpch.NodeHistogram
 import org.apache.spark.rdd.RDD
 
 /**
@@ -9,13 +8,15 @@ import org.apache.spark.rdd.RDD
 object Triangles {
 
   case class Edge(vertex1:Int, vertex2:Int, origin:(Int, Int)){
-    def apply(vert1:Int, vert2:Int): Edge = {
-      if (vert1 > vert2) new Edge(vert1, vert2, (vert1, vert2))
-      else new Edge(vert2, vert1, (vert1, vert2))
-    }
   }
 
-  def getTriangles(graph:RDD[Edge]): Unit ={
+  def convertGraph(rawGraph: RDD[String]): RDD[Edge] ={
+    rawGraph.map(line => createEdge(line.split("\t")(0).toInt, line.split("\t")(1).toInt))
+  }
+
+  def getTriangles(rawGraph:RDD[String], outputDir:String): Unit ={
+
+    val graph = convertGraph(rawGraph)
     // sort edges
     val edgeCombinations = graph.map(edge => {
       (edge.vertex1, edge)
@@ -28,25 +29,31 @@ object Triangles {
         (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
        })
 
-    val allEdges = graph.map(edge => (edge, List(edge)))
+    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
     val triangles = missedEdges
-      .union(allEdges)  //include all single edges
-      .reduceByKey((edges1, edges2) => edges1 ::: edges2) //build triangles
-      .filter(edgeList => edgeList._2.length > 2) //remove all mappings which have only 2 edges
+      .join(allEdges)  //join with single edges
+      .map(triangle => triangle._2._1 ::: triangle._2._2)
 
-    triangles.saveAsTextFile("output/")
+    triangles.saveAsTextFile(outputDir)
   }
 
 
-  def getOuterTriangleVertices(combination:(Int, (Triangles.Edge, Triangles.Edge))): Triangles.Edge ={
+  def getOuterTriangleVertices(combination:(Int, (Triangles.Edge, Triangles.Edge))): (Int, Int) ={
     val innerVertex = combination._1
     val edge1 = combination._2._1
     val edge2 = combination._2._2
 
     val outerVertex1:Int = if (edge1.vertex1 != innerVertex) edge1.vertex1 else edge1.vertex2
     val outerVertex2:Int = if (edge2.vertex1 != innerVertex) edge2.vertex1 else edge2.vertex2
-//key is probably not corect
-    Edge.apply(outerVertex1, outerVertex2, (outerVertex1, outerVertex2))
+
+    if (outerVertex1 > outerVertex2)
+      (outerVertex1, outerVertex2)
+    else (outerVertex2, outerVertex1)
+  }
+
+  def createEdge(vert1:Int, vert2:Int): Edge = {
+    if (vert1 > vert2) new Edge(vert1, vert2, (vert1, vert2))
+    else new Edge(vert2, vert1, (vert1, vert2))
   }
 
 }

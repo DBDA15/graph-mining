@@ -1,5 +1,6 @@
 package de.hpi.fgis.tpch
 
+import de.hpi.dbda.graph_mining.Triangles
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
@@ -33,15 +34,24 @@ object NodeHistogram extends App {
 
   @Override
   override def main(args: Array[String]) {
-    val inputPath = args(0)
+    val mode = args(0)
+    val inputPath = args(1)
+    val outputPath = args(2)
 
     val conf = new SparkConf()
     conf.setAppName(NodeHistogram.getClass.getName)
     conf.set("spark.hadoop.validateOutputSpecs", "false");
     val context = new SparkContext(conf)
 
+    if (mode.equals("cb"))
     //calculateIncomingOutcomingCount(context, inputPath, args)
-    convertToBidirectedGraph(context, inputPath, args)
+      convertToBidirectedGraph(context, inputPath, args)
+
+    if (mode.equals("t"))
+      Triangles.getTriangles(context.textFile(inputPath), outputPath)
+
+    if(mode.equals("h"))
+      calculateIncomingOutcomingCount(context,inputPath, outputPath)
 
   }
 
@@ -74,12 +84,11 @@ object NodeHistogram extends App {
   }
 
 
+  def calculateIncomingOutcomingCount(context:SparkContext, inputPath:String, outputDir:String): Unit = {
 
-  def calculateIncomingOutcomingCount(context:SparkContext, inputPath:String, args: Array[String]): Unit = {
-
-    val followerPath = args(1)
-    val followingPath = args(2)
-    val combinedPath = args(3)
+    val followerPath = outputDir + "/follower"
+    val followingPath = outputDir + "/following"
+    val combinedPath = outputDir + "/combined"
 
     val twitterEntries =
       context.textFile(inputPath)
