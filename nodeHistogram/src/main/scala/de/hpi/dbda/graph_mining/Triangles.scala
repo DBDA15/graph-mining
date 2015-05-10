@@ -3,11 +3,11 @@ package de.hpi.dbda.graph_mining
 import org.apache.spark.rdd.RDD
 
 /**
- * Created by rice on 05.05.15.
+ * Created by ricarda schueler on 05.05.15.
  */
 object Triangles {
 
-  case class Edge(vertex1:Int, vertex2:Int, origin:(Int, Int)){
+  case class Edge(vertex1:Int, vertex2:Int, original:(Int, Int)){
   }
 
   def convertGraph(rawGraph: RDD[String]): RDD[Edge] ={
@@ -15,6 +15,10 @@ object Triangles {
   }
 
   def getTriangles(rawGraph:RDD[String], outputDir:String): Unit ={
+    val triangleOut = outputDir + "/all"
+    val circularTriangleOut = outputDir + "/circular"
+    val nonCircularTriangleOut = outputDir + "/nonCircular"
+
 
     val graph = convertGraph(rawGraph)
     // sort edges
@@ -34,9 +38,30 @@ object Triangles {
       .join(allEdges)  //join with single edges
       .map(triangle => triangle._2._1 ::: triangle._2._2)
 
-    triangles.saveAsTextFile(outputDir)
+    //eliminate all duplicates
+    val uniqueTriangles = triangles
+      .filter(triangle => triangle(0).vertex2 > triangle(1).vertex2)
+      .map(edgeList => {
+          List(edgeList(0).original) ::: List(edgeList(1).original) ::: List(edgeList(2).original)
+     })
+    uniqueTriangles.saveAsTextFile(triangleOut)
+
+    //check for circle
+    val circularTriangles = uniqueTriangles.filter(edgeList =>{
+      xor(edgeList(0)._1 == edgeList(1)._2, edgeList(0)._1 == edgeList(2)._2) && xor(edgeList(1)._1 == edgeList(0)._2, edgeList(1)._1 == edgeList(2)._2)
+    })
+
+    circularTriangles.saveAsTextFile(circularTriangleOut)
+
+    /* //check for non circle
+    val noncircularTriangles = uniqueTriangles.filter(edgeList =>{
+     !(xor(edgeList(0)._1 == edgeList(1)._2, edgeList(0)._1 == edgeList(2)._2) && xor(edgeList(1)._1 == edgeList(0)._2, edgeList(1)._1 == edgeList(2)._2))
+    })
+
+    noncircularTriangles.saveAsTextFile(nonCircularTriangleOut)*/
   }
 
+  def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
 
   def getOuterTriangleVertices(combination:(Int, (Triangles.Edge, Triangles.Edge))): (Int, Int) ={
     val innerVertex = combination._1

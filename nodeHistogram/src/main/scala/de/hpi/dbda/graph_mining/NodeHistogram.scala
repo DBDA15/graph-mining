@@ -10,6 +10,7 @@ object NodeHistogram extends App {
 
   val splitCharacter_Twitter = "\t"
   val splitCharacter_Wikipedia = " "
+  var seperator = "\t"
 
   case class TwitterEntry(id: Int, followerCount: Int, followingCount: Int) {
 
@@ -37,6 +38,8 @@ object NodeHistogram extends App {
     val mode = args(0)
     val inputPath = args(1)
     val outputPath = args(2)
+
+    if (args.length > 3) seperator = args(3)
 
     val conf = new SparkConf()
     conf.setAppName(NodeHistogram.getClass.getName)
