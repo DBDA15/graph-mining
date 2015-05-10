@@ -42,11 +42,12 @@ object NodeHistogram extends App {
 
     //calculateIncomingOutcomingCount(context, inputPath, args)
     convertToBidirectedGraph(context, inputPath, args)
+
   }
 
-  def convertToBidirectedGraph(context:SparkContext, inputPath: String, args: Array[String]): Unit ={
+  def convertToBidirectedGraph(context:SparkContext, inputPath: String, args: Array[String]):  RDD[(String, NodeHistogram.Edge)] ={
     val output = args(1)
-    
+
     val edges =
       context.textFile(inputPath)
         .flatMap(line => List(
@@ -60,6 +61,7 @@ object NodeHistogram extends App {
     val bidirectionalEdges = summedEdges.filter(edge => isBidirectional(edge._2))
 
     bidirectionalEdges.keys.saveAsTextFile(args(1))
+    bidirectionalEdges
   }
 
   def generateEdge(id_1: Int, id_2: Int): Edge = {
