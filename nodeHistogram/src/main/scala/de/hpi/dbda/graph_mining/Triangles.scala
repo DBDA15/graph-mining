@@ -11,17 +11,24 @@ object Triangles {
   case class Edge(vertex1:Int, vertex2:Int, original:(Int, Int)){
   }
 
-  def convertGraph(rawGraph: RDD[String]): RDD[Edge] ={
-    rawGraph.map(line => createEdge(line.split(NodeHistogram.seperator)(0).toInt, line.split(NodeHistogram.seperator)(1).toInt))
+  def convertGraph(rawGraph: RDD[String], seperator:String): RDD[Edge] ={
+    rawGraph.map(
+      line => {
+        println(line)
+        val splitted = line.split(seperator)
+        val f = splitted(0).toInt
+        val s = splitted(1).toInt
+        createEdge(f, s)
+      })
   }
 
-  def getTriangles(rawGraph:RDD[String], outputDir:String): Unit ={
+  def getTriangles(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
     val triangleOut = outputDir + "/all"
     val circularTriangleOut = outputDir + "/circular"
     val nonCircularTriangleOut = outputDir + "/nonCircular"
 
 
-    val graph = convertGraph(rawGraph)
+    val graph = convertGraph(rawGraph, seperator)
     // sort edges
     val edgeCombinations = graph.map(edge => {
       (edge.vertex1, edge)

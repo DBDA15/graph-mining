@@ -8,9 +8,7 @@ import org.apache.spark.rdd.RDD
 
 object NodeHistogram extends App {
 
-  val splitCharacter_Twitter = "\t"
   val splitCharacter_Wikipedia = " "
-  var seperator = "\t"
 
   case class TwitterEntry(id: Int, followerCount: Int, followingCount: Int) {
 
@@ -38,27 +36,28 @@ object NodeHistogram extends App {
     val mode = args(0)
     val inputPath = args(1)
     val outputPath = args(2)
+    var seperator = "\t"
 
     if (args.length > 3) seperator = args(3)
 
     val conf = new SparkConf()
     conf.setAppName(NodeHistogram.getClass.getName)
-    conf.set("spark.hadoop.validateOutputSpecs", "false");
+    conf.set("spark.hadoop.validateOutputSpecs", "false")
     val context = new SparkContext(conf)
 
     if (mode.equals("cb"))
     //calculateIncomingOutcomingCount(context, inputPath, args)
-      convertToBidirectedGraph(context, inputPath, outputPath)
+      convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("t"))
-      Triangles.getTriangles(context.textFile(inputPath), outputPath)
+      Triangles.getTriangles(context.textFile(inputPath), outputPath, seperator)
 
     if(mode.equals("h"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
 
   }
 
-  def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String):  RDD[(String, NodeHistogram.Edge)] ={
+  def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(String, NodeHistogram.Edge)] ={
 
     val edges =
       context.textFile(inputPath)
