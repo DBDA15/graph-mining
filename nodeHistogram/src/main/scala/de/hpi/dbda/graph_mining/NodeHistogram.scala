@@ -1,4 +1,4 @@
-package de.hpi.fgis.tpch
+package de.hpi.dbda.graph_mining
 
 import de.hpi.dbda.graph_mining.Triangles
 import org.apache.spark.SparkConf
