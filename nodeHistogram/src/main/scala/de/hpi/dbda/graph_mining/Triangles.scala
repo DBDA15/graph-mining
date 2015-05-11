@@ -8,7 +8,7 @@ import org.apache.spark.rdd.RDD
  */
 object Triangles {
 
-  case class Edge(vertex1:Int, vertex2:Int, original:(Int, Int)){
+  case class Edge(vertex1:Int, vertex2:Int, original:Boolean){
   }
 
   def convertGraph(rawGraph: RDD[String], seperator:String): RDD[Edge] ={
@@ -50,13 +50,35 @@ object Triangles {
     val uniqueTriangles = triangles
       .filter(triangle => triangle(0).vertex2 > triangle(1).vertex2)
       .map(edgeList => {
-          List(edgeList(0).original) ::: List(edgeList(1).original) ::: List(edgeList(2).original)
+          List(edgeList(0)) ::: List(edgeList(1)) ::: List(edgeList(2))
      })
     uniqueTriangles.saveAsTextFile(triangleOut)
 
     //check for circle
     val circularTriangles = uniqueTriangles.filter(edgeList =>{
-      xor(edgeList(0)._1 == edgeList(1)._2, edgeList(0)._1 == edgeList(2)._2) && xor(edgeList(1)._1 == edgeList(0)._2, edgeList(1)._1 == edgeList(2)._2)
+      var e1_v1 = edgeList(0).vertex1
+      var e1_v2 = edgeList(0).vertex2
+      var e2_v1 = edgeList(1).vertex1
+      var e2_v2 = edgeList(1).vertex2
+      var e3_v1 = edgeList(2).vertex1
+      var e3_v2 = edgeList(2).vertex2
+
+      if (!edgeList(0).original) {
+        e1_v1 = edgeList(0).vertex2
+        e1_v2 = edgeList(0).vertex1
+      }
+
+      if (!edgeList(1).original) {
+        e2_v1 = edgeList(1).vertex2
+        e2_v2 = edgeList(1).vertex1
+      }
+
+      if (!edgeList(2).original) {
+        e3_v1 = edgeList(2).vertex2
+        e3_v2 = edgeList(2).vertex1
+      }
+
+      xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
     })
 
     circularTriangles.saveAsTextFile(circularTriangleOut)
@@ -85,8 +107,8 @@ object Triangles {
   }
 
   def createEdge(vert1:Int, vert2:Int): Edge = {
-    if (vert1 > vert2) new Edge(vert1, vert2, (vert1, vert2))
-    else new Edge(vert2, vert1, (vert1, vert2))
+    if (vert1 > vert2) new Edge(vert1, vert2, true)
+    else new Edge(vert2, vert1, false)
   }
 
 }
