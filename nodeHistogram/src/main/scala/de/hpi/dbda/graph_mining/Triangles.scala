@@ -1,6 +1,7 @@
 package de.hpi.dbda.graph_mining
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.storage.StorageLevel
 
 /**
  * Created by ricarda schueler on 05.05.15.
@@ -10,10 +11,41 @@ object Triangles {
   case class Edge(vertex1:Int, vertex2:Int, original:Boolean){
   }
 
+  case class Triangle(edges:List[Edge]){
+
+    //check for circle
+    def isCircular(): Boolean={
+        var e1_v1 = this.edges.head.vertex1
+        var e1_v2 = this.edges.head.vertex2
+        var e2_v1 = this.edges(1).vertex1
+        var e2_v2 = this.edges(1).vertex2
+        var e3_v1 = this.edges(2).vertex1
+        var e3_v2 = this.edges(2).vertex2
+
+        if (!this.edges.head.original) {
+          e1_v1 = this.edges.head.vertex2
+          e1_v2 = this.edges.head.vertex1
+        }
+
+        if (!this.edges(1).original) {
+          e2_v1 = this.edges(1).vertex2
+          e2_v2 = this.edges(1).vertex1
+        }
+
+        if (!this.edges(2).original) {
+          e3_v1 = this.edges(2).vertex2
+          e3_v2 = this.edges(2).vertex1
+        }
+
+        xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
+    }
+
+    def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
+  }
+
   def convertGraph(rawGraph: RDD[String], seperator:String): RDD[Edge] ={
     rawGraph.map(
       line => {
-        println(line)
         val splitted = line.split(seperator)
         val f = splitted(0).toInt
         val s = splitted(1).toInt
@@ -21,7 +53,7 @@ object Triangles {
       })
   }
 
-  def getTriangles(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
+  def getTriangles(rawGraph:RDD[String], outputDir:String, seperator:String) ={
     val triangleOut = outputDir + "/all"
     val circularTriangleOut = outputDir + "/circular"
     val nonCircularTriangleOut = outputDir + "/nonCircular"
@@ -40,45 +72,19 @@ object Triangles {
         (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
        })
 
+    val missedEdgesPersist = missedEdges.persist(StorageLevel.MEMORY_AND_DISK)
+
     val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = missedEdges
+    val triangles = missedEdgesPersist
       .join(allEdges)  //join with single edges
-      .map(triangle => triangle._2._1 ::: triangle._2._2)
+      .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
     //eliminate all duplicates
     val uniqueTriangles = triangles
-      .filter(triangle => triangle(0).vertex2 > triangle(1).vertex2)
-      .map(edgeList => {
-          List(edgeList(0)) ::: List(edgeList(1)) ::: List(edgeList(2))
-     })
+      .filter(triangle => triangle.edges.head.vertex2 > triangle.edges(1).vertex2)
     uniqueTriangles.saveAsTextFile(triangleOut)
 
-    //check for circle
-    val circularTriangles = uniqueTriangles.filter(edgeList =>{
-      var e1_v1 = edgeList(0).vertex1
-      var e1_v2 = edgeList(0).vertex2
-      var e2_v1 = edgeList(1).vertex1
-      var e2_v2 = edgeList(1).vertex2
-      var e3_v1 = edgeList(2).vertex1
-      var e3_v2 = edgeList(2).vertex2
-
-      if (!edgeList(0).original) {
-        e1_v1 = edgeList(0).vertex2
-        e1_v2 = edgeList(0).vertex1
-      }
-
-      if (!edgeList(1).original) {
-        e2_v1 = edgeList(1).vertex2
-        e2_v2 = edgeList(1).vertex1
-      }
-
-      if (!edgeList(2).original) {
-        e3_v1 = edgeList(2).vertex2
-        e3_v2 = edgeList(2).vertex1
-      }
-
-      xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
-    })
+    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular())
 
     circularTriangles.saveAsTextFile(circularTriangleOut)
 
@@ -89,8 +95,6 @@ object Triangles {
 
     noncircularTriangles.saveAsTextFile(nonCircularTriangleOut)*/
   }
-
-  def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
 
   def getOuterTriangleVertices(combination:(Int, (Triangles.Edge, Triangles.Edge))): (Int, Int) ={
     val innerVertex = combination._1
