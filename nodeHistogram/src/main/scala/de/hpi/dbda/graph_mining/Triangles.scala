@@ -1,6 +1,5 @@
 package de.hpi.dbda.graph_mining
 
-import de.hpi.fgis.tpch.NodeHistogram
 import org.apache.spark.rdd.RDD
 
 /**

@@ -1,6 +1,5 @@
 package de.hpi.dbda.graph_mining
 
-import de.hpi.dbda.graph_mining.Triangles
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
