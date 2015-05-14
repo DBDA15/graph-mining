@@ -49,7 +49,7 @@ object NodeHistogram extends App {
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("t"))
-      Triangles.getTriangles(context.textFile(inputPath), outputPath, seperator)
+      Triangles.getTrianglesAndSave(context.textFile(inputPath), outputPath, seperator)
 
     if(mode.equals("h"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
