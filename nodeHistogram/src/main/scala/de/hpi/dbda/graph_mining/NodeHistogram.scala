@@ -54,9 +54,13 @@ object NodeHistogram extends App {
     if(mode.equals("h"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
 
+    //TODO: Remove - Testing only: calculates the degree of all nodes and orders the result
+    if(mode.equals("d"))
+      Triangles.calculateDegrees(Triangles.convertGraph(context.textFile(inputPath), seperator))
+
   }
 
-  def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(String, NodeHistogram.Edge)] ={
+  def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(NodeHistogram.Edge)] ={
 
     val edges =
       context.textFile(inputPath)
@@ -71,7 +75,7 @@ object NodeHistogram extends App {
     val bidirectionalEdges = summedEdges.filter(edge => isBidirectional(edge._2))
 
     bidirectionalEdges.keys.saveAsTextFile(outputPath)
-    bidirectionalEdges
+    bidirectionalEdges.values
   }
 
   def generateEdge(id_1: Int, id_2: Int): Edge = {

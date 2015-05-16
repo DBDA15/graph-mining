@@ -132,7 +132,7 @@ object Triangles {
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1)), (edge.vertex2, ( edge.vertex2, edge.vertex2))))
     .reduceByKey((zone1, zone2) => zone1)
 
-    val graphMap1 = graph.flatMap((edge => List((edge.vertex1, edge), (edge.vertex2, edge))))
+    val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
     //reduce1
     val edgeZones = graphMap1
@@ -171,12 +171,18 @@ object Triangles {
     else new Edge(vert2, vert1, false)
   }
 
-  def calculateDegree(graph:RDD[Edge]): Unit ={
+  def calculateDegrees(graph:RDD[Edge]): Unit ={
     val degree = graph
       .flatMap(edge => List((edge.vertex1.id, 1), (edge.vertex2.id, 1)))
       .reduceByKey((vertex1, vertex2) => {
         vertex1 + vertex2
       })
+      //Sortiert vermtl nochmal verteilt. Wollen wir das?
+      .sortBy(_._2, false)
+
+    //TODO: remove
+    degree.foreach(d => println(d))
+    //degree.take(1)
 
     //TODO finish degree calculation and sorting vertices after degree
 //    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
