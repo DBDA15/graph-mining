@@ -104,10 +104,7 @@ object Triangles {
   }
 
   def calculateTruss(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
-    val triangleOut = outputDir + "/all"
-    val circularTriangleOut = outputDir + "/circular"
-    val nonCircularTriangleOut = outputDir + "/nonCircular"
-
+    val trussOut = outputDir + "/truss"
 
     var graph:RDD[Triangles.Edge] = convertGraph(rawGraph, seperator)
     var graphOldCount:Long = 0
@@ -124,11 +121,36 @@ object Triangles {
     }
 
     findRemainingGraphComponents(graph)
+    graph.saveAsTextFile(trussOut)
   }
 
+
+  //at the end return RDD[List[Edge]]
   def findRemainingGraphComponents(graph:RDD[Triangles.Edge]): Unit ={
   //TODO
-    
+    //build zone file
+    var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1)), (edge.vertex2, ( edge.vertex2, edge.vertex2))))
+    .reduceByKey((zone1, zone2) => zone1)
+
+    val graphMap1 = graph.flatMap((edge => List((edge.vertex1, edge), (edge.vertex2, edge))))
+
+    //reduce1
+    val edgeZones = graphMap1
+      .join(zones)
+      .map(edgeCombination => (edgeCombination._1, (List(edgeCombination._2._1), edgeCombination._2._2)))
+      .reduceByKey((edgeCombination1, edgeCombination2) => (edgeCombination1._1 ::: edgeCombination2._1, edgeCombination1._2))
+      .flatMap(comb => comb._2._1.map(edge => (edge , comb._2._2))) //edge => zone
+
+    //reduce2
+    val reduce2 =
+      edgeZones
+      .map(edgeZone => (edgeZone._1, List(edgeZone._2)))
+      .reduceByKey((zone1, zone2) => {
+        val list = zone1 ::: zone2
+        list.distinct
+      })
+  //TODO finish find graph components as on page 40
+
   }
 
   def getOuterTriangleVertices(combination:(Vertex, (Triangles.Edge, Triangles.Edge))): (Vertex, Vertex) ={
@@ -156,14 +178,12 @@ object Triangles {
         vertex1 + vertex2
       })
 
+    //TODO finish degree calculation and sorting vertices after degree
 //    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
 //    vertexGraph
 //      .join(degree)
 //      .map(degreeCombination =>{
 //        degreeCombination._2._1.
-
-    })
-
   }
 
 }
