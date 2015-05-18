@@ -117,13 +117,14 @@ object Triangles {
     var graphOldCount:Long = 0
 
     while(graph.count() != graphOldCount) {
+      graphOldCount = graph.count()
 
       val triangles = getTriangles(graph)
 
       val singleEdges = triangles.flatMap(triangle => triangle.edges).map(edge => (edge, 1))
 
       val triangleCountPerEdge = singleEdges.reduceByKey((count1, count2) => count1 + count2)
-      graphOldCount = graph.count()
+
       graph = triangleCountPerEdge.filter(count => count._2 > k).map(edgeCount => edgeCount._1)
     }
 
@@ -133,55 +134,56 @@ object Triangles {
 
 
   //at the end return RDD[List[Edge]]
-  def findRemainingGraphComponents(graph:RDD[Triangles.Edge]): Unit ={
+  def findRemainingGraphComponents(graph:RDD[Triangles.Edge]): RDD[(Int, Vertex)] ={
   //TODO
     //build zone file
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1.id)), (edge.vertex2, ( edge.vertex2, edge.vertex2.id))))
     .reduceByKey((zone1, zone2) => zone1)
 
-    var interZoneEdgeCounter = 0
+    var interZoneEdgeCounter = 1
 
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
-    //reduce1
-    //each edge with zone (ine edge can appear multiple times if appears in multiple zones
-    val edgeZones = graphMap1
-      .join(zones)
-      .map(edgeCombination => (edgeCombination._1, (List(edgeCombination._2._1), edgeCombination._2._2)))
-      .reduceByKey((edgeCombination1, edgeCombination2) => (edgeCombination1._1 ::: edgeCombination2._1, edgeCombination1._2))
-      .flatMap(comb => comb._2._1.map(edge => (edge , comb._2._2._2))) //edge => zone
+    while (interZoneEdgeCounter != 0){
+      //reduce1
+      //each edge with zone (ine edge can appear multiple times if appears in multiple zones
+      val edgeZones = graphMap1
+        .join(zones)
+        .map(edgeCombination => (edgeCombination._1, (List(edgeCombination._2._1), edgeCombination._2._2)))
+        .reduceByKey((edgeCombination1, edgeCombination2) => (edgeCombination1._1 ::: edgeCombination2._1, edgeCombination1._2))
+        .flatMap(comb => comb._2._1.map(edge => (edge , comb._2._2._2))) //edge => zone
 
-    //reduce2
-    // each edge has list with its zones
-    val edgeZonesCombined =
-      edgeZones
-      .map(edgeZone => (edgeZone._1, List(edgeZone._2)))
-      .reduceByKey((zone1, zone2) => {
-        val list = zone1 ::: zone2
-        list.distinct
-      })
+      //reduce2
+      // each edge has list with its zones
+      val edgeZonesCombined =
+        edgeZones
+        .map(edgeZone => (edgeZone._1, List(edgeZone._2)))
+        .reduceByKey((zone1, zone2) => {
+          val list = zone1 ::: zone2
+          list.distinct
+        })
 
-  //TODO finish find graph components as on page 40
-    //calculate interZoneCount
-    interZoneEdgeCounter = edgeZonesCombined
-      .map(edgeZone => if (edgeZone._2.length > 1 ) 1 else 0)
-      .reduce((zoneCount1, zoneCount2) => zoneCount1 + zoneCount2)
+      //calculate interZoneCount
+      interZoneEdgeCounter = edgeZonesCombined
+        .map(edgeZone => if (edgeZone._2.length > 1 ) 1 else 0)
+        .reduce((zoneCount1, zoneCount2) => zoneCount1 + zoneCount2)
 
-    //calculate zone merging: result z => smallestZone
-    val interZoneEdges = edgeZonesCombined.flatMap
-    { edgeZone =>
-      val sortedZones = edgeZone._2.sorted
-      val smallestZone = sortedZones.head
-      sortedZones.tail.map(zone => (zone, smallestZone))
+      //calculate zone merging: result z => smallestZone
+      val interZoneEdges = edgeZonesCombined.flatMap
+      { edgeZone =>
+        val sortedZones = edgeZone._2.sorted
+        val smallestZone = sortedZones.head
+        sortedZones.tail.map(zone => (zone, smallestZone))
+      }
+
+      //reduce3
+      val zoneVertex = zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
+      val bestZonePerZone = interZoneEdges.reduceByKey((zone1, zone2) => if (zone1< zone2) zone1 else zone2) //TODO check correct sorting
+      val verticesWithNewZones = zoneVertex.join(bestZonePerZone)
+      zones = verticesWithNewZones.map(v => (v._2._1, (v._2)))
     }
 
-    val zoneVertex = zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
-    val verticesWithNewZones = zoneVertex.join(interZoneEdges).map(v => (v._1, List(v._2)))
-//    verticesWithNewZones.reduceByKey{
-//      (zoneVertex1, zoneVertex2) =>
-//       // if (!zoneVertex1.contains(zoneVertex2.head._2))
-//    }
-
+    zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
   }
 
   def getOuterTriangleVertices(combination:(Vertex, (Triangles.Edge, Triangles.Edge))): (Vertex, Vertex) ={
@@ -211,7 +213,7 @@ object Triangles {
       //Sortiert vermtl nochmal verteilt. Wollen wir das?
       .sortBy(_._2, false)
     .persist(StorageLevel.MEMORY_AND_DISK)
-/* TODO: fix
+// TODO: fix
     graph.foreach(edge => {
       val degree1 = degree.lookup(edge.vertex1.id).head
       val degree2 = degree.lookup(edge.vertex2.id).head
@@ -231,7 +233,7 @@ object Triangles {
     if(graph.count() > 20)
       graph.take(20).foreach(g => println(g))
     else
-      graph.foreach(g => println(g))*/
+      graph.foreach(g => println(g))
 
     //TODO finish degree calculation and sorting vertices after degree
 //    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
