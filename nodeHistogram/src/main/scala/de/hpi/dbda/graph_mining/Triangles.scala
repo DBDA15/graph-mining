@@ -1,13 +1,8 @@
 package de.hpi.dbda.graph_mining
 
-import org.apache.spark.{TaskContext, Partition}
-import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
-/**
- * Created by ricarda schueler on 05.05.15.
- */
 object Triangles {
 
   case class Vertex(id: Int, var degree:Int)
@@ -23,7 +18,7 @@ object Triangles {
   case class Triangle(edges:List[Edge]){
 
     //check for circle
-    def isCircular(): Boolean={
+    def isCircular: Boolean={
         var e1_v1 = this.edges.head.vertex1.id
         var e1_v2 = this.edges.head.vertex2.id
         var e2_v1 = this.edges(1).vertex1.id
@@ -62,10 +57,10 @@ object Triangles {
       })
   }
 
-  def getTrianglesAndSave(rawGraph:RDD[String], outputDir:String, seperator:String) = {
+  def getTrianglesAndSave(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
     val triangleOut = outputDir + "/all"
     val circularTriangleOut = outputDir + "/circular"
-    val nonCircularTriangleOut = outputDir + "/nonCircular"
+//    val nonCircularTriangleOut = outputDir + "/nonCircular"
 
 
     val graph = convertGraph(rawGraph, seperator)
@@ -74,7 +69,7 @@ object Triangles {
     val uniqueTriangles = getTriangles(graph)
     uniqueTriangles.saveAsTextFile(triangleOut)
 
-    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular())
+    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
 
     circularTriangles.saveAsTextFile(circularTriangleOut)
 
@@ -106,8 +101,10 @@ object Triangles {
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
     //eliminate all duplicates
-    triangles
+    val filteredTriangles = triangles
       .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
+
+    filteredTriangles
   }
 
   def calculateTruss(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
@@ -125,17 +122,14 @@ object Triangles {
 
       val triangleCountPerEdge = singleEdges.reduceByKey((count1, count2) => count1 + count2)
 
-      graph = triangleCountPerEdge.filter(count => count._2 > k).map(edgeCount => edgeCount._1)
+      graph = triangleCountPerEdge.filter(count => count._2 >= k).map(edgeCount => edgeCount._1)
     }
 
-    findRemainingGraphComponents(graph)
-    graph.saveAsTextFile(trussOut)
+    val components = findRemainingGraphComponents(graph)
+    components.saveAsTextFile(trussOut)
   }
 
-
-  //at the end return RDD[List[Edge]]
   def findRemainingGraphComponents(graph:RDD[Triangles.Edge]): RDD[(Int, Vertex)] ={
-  //TODO
     //build zone file
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1.id)), (edge.vertex2, ( edge.vertex2, edge.vertex2.id))))
     .reduceByKey((zone1, zone2) => zone1)
@@ -173,14 +167,15 @@ object Triangles {
       { edgeZone =>
         val sortedZones = edgeZone._2.sorted
         val smallestZone = sortedZones.head
-        sortedZones.tail.map(zone => (zone, smallestZone))
+        sortedZones.map(zone => (zone, smallestZone))
       }
 
       //reduce3
       val zoneVertex = zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
-      val bestZonePerZone = interZoneEdges.reduceByKey((zone1, zone2) => if (zone1< zone2) zone1 else zone2) //TODO check correct sorting
+      val bestZonePerZone = interZoneEdges.reduceByKey((zone1, zone2) => if (zone1< zone2) zone1 else zone2)
       val verticesWithNewZones = zoneVertex.join(bestZonePerZone)
-      zones = verticesWithNewZones.map(v => (v._2._1, (v._2)))
+
+      zones = verticesWithNewZones.map(v => (v._2._1, v._2))
     }
 
     zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))

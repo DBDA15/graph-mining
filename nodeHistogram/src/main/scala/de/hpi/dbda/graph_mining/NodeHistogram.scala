@@ -44,18 +44,21 @@ object NodeHistogram extends App {
     conf.set("spark.hadoop.validateOutputSpecs", "false")
     val context = new SparkContext(conf)
 
-    if (mode.equals("cb"))
+    if (mode.equals("bidirect"))
     //calculateIncomingOutcomingCount(context, inputPath, args)
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
-    if (mode.equals("t"))
+    if (mode.equals("triangle"))
       Triangles.getTrianglesAndSave(context.textFile(inputPath), outputPath, seperator)
 
-    if(mode.equals("h"))
+    if (mode.equals("truss"))
+      Triangles.calculateTruss(2, context.textFile(inputPath), outputPath, seperator)
+
+    if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
 
     //TODO: Remove - Testing only: calculates the degree of all nodes and orders the result
-    if(mode.equals("d"))
+    if(mode.equals("degree"))
       Triangles.calculateDegrees(Triangles.convertGraph(context.textFile(inputPath), seperator))
 
   }
