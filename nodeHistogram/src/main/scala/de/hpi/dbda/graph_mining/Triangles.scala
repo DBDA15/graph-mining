@@ -1,5 +1,7 @@
 package de.hpi.dbda.graph_mining
 
+import org.apache.spark.{TaskContext, Partition}
+import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
@@ -10,7 +12,12 @@ object Triangles {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(vertex1:Vertex, vertex2:Vertex, original:Boolean){
+  case class Edge(var vertex1:Vertex, var vertex2:Vertex, var original:Boolean){
+    def replace(newEdge:Edge): Unit ={
+      vertex1 = newEdge.vertex1
+      vertex2 = newEdge.vertex2
+      original = newEdge.original
+    }
   }
 
   case class Triangle(edges:List[Edge]){
@@ -203,10 +210,28 @@ object Triangles {
       })
       //Sortiert vermtl nochmal verteilt. Wollen wir das?
       .sortBy(_._2, false)
+    .persist(StorageLevel.MEMORY_AND_DISK)
+/* TODO: fix
+    graph.foreach(edge => {
+      val degree1 = degree.lookup(edge.vertex1.id).head
+      val degree2 = degree.lookup(edge.vertex2.id).head
+      var newEdge = new Edge(new Vertex(edge.vertex1.id, degree1), new Vertex(edge.vertex2.id, degree2), edge.original)
+      if(degree1 < degree2) {
+        newEdge = new Edge(new Vertex(edge.vertex2.id, degree2), new Vertex(edge.vertex1.id, degree1), !edge.original)
+      }
+      edge.replace(newEdge)
+    })
 
     //TODO: remove
-    degree.foreach(d => println(d))
-    //degree.take(1)
+    if(degree.count() > 20)
+      degree.take(20).foreach(d => println(d))
+    else
+      degree.foreach(d => println(d))
+
+    if(graph.count() > 20)
+      graph.take(20).foreach(g => println(g))
+    else
+      graph.foreach(g => println(g))*/
 
     //TODO finish degree calculation and sorting vertices after degree
 //    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
