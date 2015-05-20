@@ -1,5 +1,6 @@
 package de.hpi.dbda.graph_mining
 
+import org.apache.spark.{HashPartitioner, RangePartitioner}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
@@ -127,6 +128,24 @@ object Triangles {
 
     val components = findRemainingGraphComponents(graph)
     components.saveAsTextFile(trussOut)
+
+    //calculate cliquen
+    //convert into zone => edge mappings
+    val edgePerVertex = graph.map(edge => (edge.vertex1, edge))
+    val vertexInZComponent = components.map(zoneVertex => (zoneVertex._2, zoneVertex._1))
+    val edgeInComponent = edgePerVertex
+      .join(vertexInZComponent)
+      .map(e => (e._2._2, e._2._1))
+
+    val partitions = Math.max(components.map(_._1).distinct().count(), 100).toInt
+    val partitionedEdgeComponents =
+      edgeInComponent.partitionBy(new HashPartitioner(partitions))
+        .persist(StorageLevel.MEMORY_AND_DISK)
+
+
+    //all vertices in component, check if every edge exists -> if yes clique
+    val groupedEdges = partitionedEdgeComponents.groupByKey()
+//    groupedEdges.aggregateByKey()((a, b) => a)
   }
 
   def findRemainingGraphComponents(graph:RDD[Triangles.Edge]): RDD[(Int, Vertex)] ={
@@ -180,6 +199,8 @@ object Triangles {
 
     zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
   }
+
+
 
   def getOuterTriangleVertices(combination:(Vertex, (Triangles.Edge, Triangles.Edge))): (Vertex, Vertex) ={
     val innerVertex = combination._1
