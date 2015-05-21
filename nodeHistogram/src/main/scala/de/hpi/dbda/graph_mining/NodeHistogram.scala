@@ -61,6 +61,10 @@ object NodeHistogram extends App {
     if(mode.equals("degree"))
       Triangles.calculateDegrees(Triangles.convertGraph(context.textFile(inputPath), seperator))
 
+    //TODO: Remove - Testing only: calculates the cliques in graph
+    if(mode.equals("cliqueSingle"))
+      Triangles.calculateCliques(Triangles.convertGraph(context.textFile(inputPath), seperator))
+
   }
 
   def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(NodeHistogram.Edge)] ={

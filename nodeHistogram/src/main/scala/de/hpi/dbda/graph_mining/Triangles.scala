@@ -233,8 +233,7 @@ object Triangles {
     graph
       .keyBy(e => e.vertex1.id)
       .join(degree)
-      .map(e => new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, e._2._1.original))
-      .keyBy(e => e.vertex2.id)
+      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, e._2._1.original)))
       .join(degree)
       .map(e => {if (e._2._1.original)
           createEdge(e._2._1.vertex1, new Vertex(e._1, e._2._2))
@@ -242,7 +241,6 @@ object Triangles {
           createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)
         })
       //.foreach(e => println(e))
-
 
     //TODO finish degree calculation and sorting vertices after degree
 //    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
@@ -252,4 +250,51 @@ object Triangles {
 //        degreeCombination._2._1.
   }
 
+  def calculateCliques(graph: RDD[Edge]): Unit ={
+    val graphArray = graph.collect()
+    val vertexSet = getVertexSet(graphArray)
+
+    val cliques = BronKerbosch(Set(), vertexSet, Set(), graphArray, Array())
+
+    cliques.foreach({c => c.foreach(v => print(v + ", "))
+      println(" ")})
+  }
+
+  def getVertexSet(graph: Array[Triangles.Edge]): Set[Int] ={
+    var vertexSet : Set[Int] = Set()
+
+    graph.foreach(e => vertexSet += (e.vertex1.id, e.vertex2.id))
+
+    vertexSet
+  }
+
+  def getNeighbors(vertex:Int, graph: Array[Triangles.Edge]): Set[Int] = {
+    var neighborSet : Set[Int] = Set()
+
+    graph.foreach(e => {
+      if(e.vertex1.id == vertex)
+        neighborSet += (e.vertex2.id)
+      else if(e.vertex2.id == vertex)
+        neighborSet += (e.vertex1.id)
+    })
+
+    neighborSet
+  }
+
+  def BronKerbosch(r: Set[Int], oldP: Set[Int], oldX: Set[Int], graph: Array[Triangles.Edge], oldCliques: Array[Array[Int]]): Array[Array[Int]] = {
+    var x = oldX
+    var p = oldP
+    var cliques = oldCliques
+    if (p.isEmpty && x.isEmpty) {
+      cliques = cliques :+ r.toArray
+      return cliques
+    }
+    p.foreach(v => {
+      val neighbors = getNeighbors(v, graph)
+      cliques = cliques ++ BronKerbosch(r+(v), p.intersect(neighbors), x.intersect(neighbors), graph, Array())
+      p = p - (v)
+      x = x + (v)
+    })
+    cliques
+  }
 }
