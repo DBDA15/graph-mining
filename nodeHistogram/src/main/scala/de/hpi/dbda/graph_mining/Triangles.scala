@@ -216,40 +216,33 @@ object Triangles {
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    if (vert1.id > vert2.id) new Edge(vert1, vert2, true)
+    if (vert1.degree > vert2.degree) new Edge(vert1, vert2, true)
     else new Edge(vert2, vert1, false)
   }
 
-  def calculateDegrees(graph:RDD[Edge]): Unit ={
+  def calculateDegrees(graph:RDD[Edge]): RDD[Edge] ={
     val degree = graph
       .flatMap(edge => List((edge.vertex1.id, 1), (edge.vertex2.id, 1)))
       .reduceByKey((vertex1, vertex2) => {
         vertex1 + vertex2
       })
       //Sortiert vermtl nochmal verteilt. Wollen wir das?
-      .sortBy(_._2, false)
+      //.sortBy(_._2, false)
     .persist(StorageLevel.MEMORY_AND_DISK)
-// TODO: fix
-    graph.foreach(edge => {
-      val degree1 = degree.lookup(edge.vertex1.id).head
-      val degree2 = degree.lookup(edge.vertex2.id).head
-      var newEdge = new Edge(new Vertex(edge.vertex1.id, degree1), new Vertex(edge.vertex2.id, degree2), edge.original)
-      if(degree1 < degree2) {
-        newEdge = new Edge(new Vertex(edge.vertex2.id, degree2), new Vertex(edge.vertex1.id, degree1), !edge.original)
-      }
-      edge.replace(newEdge)
-    })
 
-    //TODO: remove
-    if(degree.count() > 20)
-      degree.take(20).foreach(d => println(d))
-    else
-      degree.foreach(d => println(d))
+    graph
+      .keyBy(e => e.vertex1.id)
+      .join(degree)
+      .map(e => new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, e._2._1.original))
+      .keyBy(e => e.vertex2.id)
+      .join(degree)
+      .map(e => {if (e._2._1.original)
+          createEdge(e._2._1.vertex1, new Vertex(e._1, e._2._2))
+        else
+          createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)
+        })
+      //.foreach(e => println(e))
 
-    if(graph.count() > 20)
-      graph.take(20).foreach(g => println(g))
-    else
-      graph.foreach(g => println(g))
 
     //TODO finish degree calculation and sorting vertices after degree
 //    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
