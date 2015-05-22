@@ -5,7 +5,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 import org.apache.spark.rdd.RDD
 
-object NodeHistogram extends App {
+object GraphMiningSpark extends App {
 
   val splitCharacter_Wikipedia = " "
 
@@ -40,7 +40,7 @@ object NodeHistogram extends App {
     if (args.length > 3) seperator = args(3)
 
     val conf = new SparkConf()
-    conf.setAppName(NodeHistogram.getClass.getName)
+    conf.setAppName(GraphMiningSpark.getClass.getName)
     conf.set("spark.hadoop.validateOutputSpecs", "false")
     val context = new SparkContext(conf)
 
@@ -49,25 +49,25 @@ object NodeHistogram extends App {
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("triangle"))
-      Triangles.getTrianglesAndSave(context.textFile(inputPath), outputPath, seperator)
+      Truss.getTrianglesAndSave(context.textFile(inputPath), outputPath, seperator)
 
     if (mode.equals("truss"))
-      Triangles.calculateTruss(2, context.textFile(inputPath), outputPath, seperator)
+      Truss.calcTrussesAndSave(2, context.textFile(inputPath), outputPath, seperator)
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
 
     //TODO: Remove - Testing only: calculates the degree of all nodes and orders the result
     if(mode.equals("degree"))
-      Triangles.calculateDegrees(Triangles.convertGraph(context.textFile(inputPath), seperator))
+      Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath), seperator))
 
     //TODO: Remove - Testing only: calculates the cliques in graph
     if(mode.equals("cliqueSingle"))
-      Triangles.calculateCliques(Triangles.convertGraph(context.textFile(inputPath), seperator))
+      Clique.calculateCliques(Truss.convertGraph(context.textFile(inputPath), seperator))
 
   }
 
-  def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(NodeHistogram.Edge)] ={
+  def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(GraphMiningSpark.Edge)] ={
 
     val edges =
       context.textFile(inputPath)

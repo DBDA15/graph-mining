@@ -4,7 +4,7 @@ import org.apache.spark.{HashPartitioner, RangePartitioner}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
-object Triangles {
+object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
@@ -108,10 +108,20 @@ object Triangles {
     filteredTriangles
   }
 
-  def calculateTruss(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
+
+  def calcTrussesAndSave(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
     val trussOut = outputDir + "/truss"
 
-    var graph:RDD[Triangles.Edge] = convertGraph(rawGraph, seperator)
+    val graph:RDD[Truss.Edge] = convertGraph(rawGraph, seperator)
+    val trusses = calculateTrusses(k, graph)
+    trusses.saveAsTextFile(trussOut)
+  }
+
+
+  def calculateTrusses(k:Int, firstGraph:RDD[Truss.Edge]): RDD[(Int, Truss.Edge)] ={
+
+    var graph = firstGraph
+
     var graphOldCount:Long = 0
 
     while(graph.count() != graphOldCount) {
@@ -127,9 +137,7 @@ object Triangles {
     }
 
     val components = findRemainingGraphComponents(graph)
-    components.saveAsTextFile(trussOut)
 
-    //calculate cliquen
     //convert into zone => edge mappings
     val edgePerVertex = graph.map(edge => (edge.vertex1, edge))
     val vertexInZComponent = components.map(zoneVertex => (zoneVertex._2, zoneVertex._1))
@@ -137,18 +145,10 @@ object Triangles {
       .join(vertexInZComponent)
       .map(e => (e._2._2, e._2._1))
 
-    val partitions = Math.max(components.map(_._1).distinct().count(), 100).toInt
-    val partitionedEdgeComponents =
-      edgeInComponent.partitionBy(new HashPartitioner(partitions))
-        .persist(StorageLevel.MEMORY_AND_DISK)
-
-
-    //all vertices in component, check if every edge exists -> if yes clique
-    val groupedEdges = partitionedEdgeComponents.groupByKey()
-//    groupedEdges.aggregateByKey()((a, b) => a)
+    edgeInComponent
   }
 
-  def findRemainingGraphComponents(graph:RDD[Triangles.Edge]): RDD[(Int, Vertex)] ={
+  def findRemainingGraphComponents(graph:RDD[Truss.Edge]): RDD[(Int, Vertex)] ={
     //build zone file
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1.id)), (edge.vertex2, ( edge.vertex2, edge.vertex2.id))))
     .reduceByKey((zone1, zone2) => zone1)
@@ -200,9 +200,7 @@ object Triangles {
     zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
   }
 
-
-
-  def getOuterTriangleVertices(combination:(Vertex, (Triangles.Edge, Triangles.Edge))): (Vertex, Vertex) ={
+  def getOuterTriangleVertices(combination:(Vertex, (Truss.Edge, Truss.Edge))): (Vertex, Vertex) ={
     val innerVertex = combination._1
     val edge1 = combination._2._1
     val edge2 = combination._2._2
@@ -220,14 +218,8 @@ object Triangles {
     else new Edge(vert2, vert1, false)
   }
 
-  def calculateDegrees(graph:RDD[Edge]): RDD[Edge] ={
-    val degree = graph
-      .flatMap(edge => List((edge.vertex1.id, 1), (edge.vertex2.id, 1)))
-      .reduceByKey((vertex1, vertex2) => {
-        vertex1 + vertex2
-      })
-      //Sortiert vermtl nochmal verteilt. Wollen wir das?
-      //.sortBy(_._2, false)
+  def addDegreesToGraph(graph:RDD[Edge]): RDD[Edge] ={
+    val degree = calculateDegrees(graph)
     .persist(StorageLevel.MEMORY_AND_DISK)
 
     graph
@@ -240,61 +232,14 @@ object Triangles {
         else
           createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)
         })
-      //.foreach(e => println(e))
-
-    //TODO finish degree calculation and sorting vertices after degree
-//    val vertexGraph = graph.flatMap(edge => List((edge.vertex1.id, (edge.vertex1, edge)), (edge.vertex2.id, (edge.vertex2, edge))))
-//    vertexGraph
-//      .join(degree)
-//      .map(degreeCombination =>{
-//        degreeCombination._2._1.
   }
 
-  def calculateCliques(graph: RDD[Edge]): Unit ={
-    val graphArray = graph.collect()
-    val vertexSet = getVertexSet(graphArray)
-
-    val cliques = BronKerbosch(Set(), vertexSet, Set(), graphArray, Array())
-
-    cliques.foreach({c => c.foreach(v => print(v + ", "))
-      println(" ")})
-  }
-
-  def getVertexSet(graph: Array[Triangles.Edge]): Set[Int] ={
-    var vertexSet : Set[Int] = Set()
-
-    graph.foreach(e => vertexSet += (e.vertex1.id, e.vertex2.id))
-
-    vertexSet
-  }
-
-  def getNeighbors(vertex:Int, graph: Array[Triangles.Edge]): Set[Int] = {
-    var neighborSet : Set[Int] = Set()
-
-    graph.foreach(e => {
-      if(e.vertex1.id == vertex)
-        neighborSet += (e.vertex2.id)
-      else if(e.vertex2.id == vertex)
-        neighborSet += (e.vertex1.id)
+  def calculateDegrees(graph:RDD[Edge]): RDD[(Int, Int)] ={
+   graph
+      .flatMap(edge => List((edge.vertex1.id, 1), (edge.vertex2.id, 1)))
+      .reduceByKey((vertex1, vertex2) => {
+      vertex1 + vertex2
     })
-
-    neighborSet
   }
 
-  def BronKerbosch(r: Set[Int], oldP: Set[Int], oldX: Set[Int], graph: Array[Triangles.Edge], oldCliques: Array[Array[Int]]): Array[Array[Int]] = {
-    var x = oldX
-    var p = oldP
-    var cliques = oldCliques
-    if (p.isEmpty && x.isEmpty) {
-      cliques = cliques :+ r.toArray
-      return cliques
-    }
-    p.foreach(v => {
-      val neighbors = getNeighbors(v, graph)
-      cliques = cliques ++ BronKerbosch(r+(v), p.intersect(neighbors), x.intersect(neighbors), graph, Array())
-      p = p - (v)
-      x = x + (v)
-    })
-    cliques
-  }
 }
