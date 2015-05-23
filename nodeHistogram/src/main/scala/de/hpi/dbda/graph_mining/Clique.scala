@@ -11,7 +11,7 @@ object Clique {
     val graphArray = graph.collect()
     val vertexSet = getVertexSet(graphArray)
 
-    val cliques = bronKerbosch(Set(), vertexSet, Set(), graphArray, Array())
+    val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array())
 
     cliques.foreach({c => c.foreach(v => print(v + ", "))
       println(" ")})
@@ -49,6 +49,31 @@ object Clique {
     p.foreach(v => {
       val neighbors = getNeighbors(v, graph)
       cliques = cliques ++ bronKerbosch(r + v, p.intersect(neighbors), x.intersect(neighbors), graph, Array())
+      p = p - v
+      x = x + v
+    })
+    cliques
+  }
+
+  def bronKerboschPivot(r: Set[Int], oldP: Set[Int], oldX: Set[Int], graph: Array[Truss.Edge], oldCliques: Array[Array[Int]]): Array[Array[Int]] = {
+    //if (r.size + oldP.size <= maxCliqueSize)
+    //  return oldCliques
+    var x = oldX
+    var p = oldP
+    var cliques = oldCliques
+    if (p.isEmpty && x.isEmpty) {
+      cliques = cliques :+ r.toArray
+      return cliques
+    }
+    var pivot = -1
+    if(p.nonEmpty)
+      pivot = p.head
+    else
+      pivot = x.head
+    val pMinusPivot = p -- getNeighbors(pivot, graph)
+    pMinusPivot.foreach(v => {
+      val neighbors = getNeighbors(v, graph)
+      cliques = cliques ++ bronKerboschPivot(r + v, p.intersect(neighbors), x.intersect(neighbors), graph, Array())
       p = p - v
       x = x + v
     })
