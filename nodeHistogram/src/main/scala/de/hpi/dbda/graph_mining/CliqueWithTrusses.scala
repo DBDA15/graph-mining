@@ -23,10 +23,10 @@ object CliqueWithTrusses {
       k += 1
     }
 
-    var notStop = true
     var maxCliqueSize = 0
+    var maxClique:Array[Int] = Array[Int]()
 
-    while (k > maxCliqueSize && notStop){
+    while (k > maxCliqueSize){
       val trusses = Truss.calculateTrusses(k-2, graph)
 
       /*
@@ -49,13 +49,21 @@ object CliqueWithTrusses {
           .persist(StorageLevel.MEMORY_AND_DISK)
 
       //all vertices in component, check if every edge exists -> if yes clique
-      val groupedEdges = partitionedEdgeComponents.groupByKey()
+      val groupedEdgesPerTruss = partitionedEdgeComponents.groupByKey()
 
-
-
+      groupedEdgesPerTruss.foreach{truss =>
+        val cliques = Clique.calculateCliques(truss._2.toArray)
+        if (cliques.length > 0 ){
+          val largestClique = cliques.maxBy(clique => clique.length)
+          if (largestClique.length > maxCliqueSize){
+            maxClique = largestClique
+            maxCliqueSize = largestClique.length
+            //TODO broadCast?
+          }
+        }
+        k = k-1
+      }
     }
-
-
   }
 
 }

@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
  */
 object Clique {
 
-  def calculateCliques(graph: RDD[Truss.Edge]): Unit ={
+  def calculateCliques(graph: RDD[Truss.Edge]): Array[Array[Int]] ={
     val graphArray = graph.collect()
     val vertexSet = getVertexSet(graphArray)
 
@@ -15,7 +15,19 @@ object Clique {
 
     cliques.foreach({c => c.foreach(v => print(v + ", "))
       println(" ")})
+    cliques
   }
+
+  def calculateCliques(graphArray: Array[Truss.Edge]): Array[Array[Int]] ={
+    val vertexSet = getVertexSet(graphArray)
+
+    val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array())
+
+    cliques.foreach({c => c.foreach(v => print(v + ", "))
+      println(" ")})
+    cliques
+  }
+
 
   def getVertexSet(graph: Array[Truss.Edge]): Set[Int] ={
     var vertexSet : Set[Int] = Set()
