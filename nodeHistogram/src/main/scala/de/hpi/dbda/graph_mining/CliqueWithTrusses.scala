@@ -9,7 +9,7 @@ import org.apache.spark.storage.StorageLevel
  */
 object CliqueWithTrusses {
 
-  def maximumClique( graph:RDD[Truss.Edge], outputDir:String, sc:SparkContext): Unit ={
+  def maximumClique( graph:RDD[Truss.Edge], outputDir:String, sc:SparkContext): RDD[Array[Int]] ={
     val cliqueOut = outputDir + "/cliques"
 
     val degrees = Truss.calculateDegrees(graph).map(x=> x._2)
@@ -79,6 +79,7 @@ object CliqueWithTrusses {
       result.unpersist()
     }
     maxCliques.foreach(e => println(e.foreach(i => print(i + " , "))))
+    maxCliques
   }
 
 }

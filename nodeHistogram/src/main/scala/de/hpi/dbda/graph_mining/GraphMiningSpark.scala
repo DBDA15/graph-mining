@@ -4,6 +4,7 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 import org.apache.spark.rdd.RDD
+import java.io._
 
 import org.apache.log4j.{Level, Logger}
 
@@ -67,7 +68,7 @@ object GraphMiningSpark extends App {
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
 
     if(mode.equals("clique"))
-      CliqueWithTrusses.maximumClique(Truss.convertGraph(context.textFile(inputPath), seperator), outputPath, context)
+      CliqueWithTrusses.maximumClique(Truss.convertGraph(context.textFile(inputPath), seperator), outputPath, context).saveAsTextFile(outputPath)
 
 
     //TODO: Remove - Testing only: calculates the degree of all nodes and orders the result
@@ -75,8 +76,12 @@ object GraphMiningSpark extends App {
       Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath), seperator))
 
     //TODO: Remove - Testing only: calculates the cliques in graph
-    if(mode.equals("cliqueSingle"))
-      Clique.calculateCliques(Truss.convertGraph(context.textFile(inputPath), seperator).collect(), 0)
+    if(mode.equals("cliqueSingle")) {
+      val cliqueResult = Clique.calculateCliques(Truss.convertGraph(context.textFile(inputPath), seperator).collect(), 0)
+      val printWriter = new PrintWriter(new File(outputPath))
+      cliqueResult.foreach(a => {a.foreach(l => printWriter.print(l))
+        printWriter.println()})
+    }
 
   }
 
