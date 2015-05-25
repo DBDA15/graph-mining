@@ -61,7 +61,7 @@ object CliqueWithTrusses {
      // var maxCliqueLocal = Array[Int]()//maxClique.value
 
       val result = groupedEdgesPerTruss.flatMap{truss =>
-        val cliques = Clique.calculateCliques(truss._2.toArray)
+        val cliques = Clique.calculateCliques(truss._2.toArray, maxCliqueSize)
         if (cliques.length > 0 ) {
           val largestCliqueSize = cliques.maxBy(clique => clique.length).length
           val largestCliques = cliques.filter(c => c.length == largestCliqueSize)

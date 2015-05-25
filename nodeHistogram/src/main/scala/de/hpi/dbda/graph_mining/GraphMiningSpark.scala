@@ -74,10 +74,6 @@ object GraphMiningSpark extends App {
     if(mode.equals("degree"))
       Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath), seperator))
 
-    //TODO: Remove - Testing only: calculates the cliques in graph
-    if(mode.equals("cliqueSingle"))
-      Clique.calculateCliques(Truss.convertGraph(context.textFile(inputPath), seperator))
-
   }
 
   def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(GraphMiningSpark.Edge)] ={

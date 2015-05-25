@@ -178,10 +178,11 @@ object Truss {
 
       //calculate interZoneCount
       if (edgeZonesCombined.isEmpty()) interZoneEdgeCounter = 0
-      else
+      else {
         interZoneEdgeCounter = edgeZonesCombined
-          .map(edgeZone => if (edgeZone._2.length > 1 ) 1 else 0)
+          .map(edgeZone => if (edgeZone._2.length > 1) 1 else 0)
           .reduce((zoneCount1, zoneCount2) => zoneCount1 + zoneCount2)
+      }
 
       //calculate zone merging: result z => smallestZone
       val interZoneEdges = edgeZonesCombined.flatMap

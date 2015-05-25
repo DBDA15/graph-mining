@@ -7,21 +7,10 @@ import org.apache.spark.rdd.RDD
  */
 object Clique {
 
-  def calculateCliques(graph: RDD[Truss.Edge]): Array[Array[Int]] ={
-    val graphArray = graph.collect()
+  def calculateCliques(graphArray: Array[Truss.Edge], maxCliqueSize: Int): Array[Array[Int]] ={
     val vertexSet = getVertexSet(graphArray)
 
-    val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array())
-
-//    cliques.foreach({c => c.foreach(v => print(v + ", "))
-//      println(" ")})
-    cliques
-  }
-
-  def calculateCliques(graphArray: Array[Truss.Edge]): Array[Array[Int]] ={
-    val vertexSet = getVertexSet(graphArray)
-
-    val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array())
+    val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array(), maxCliqueSize)
 
 //    cliques.foreach({c => c.foreach(v => print(v + ", "))
 //      println(" ")})
@@ -67,9 +56,9 @@ object Clique {
     cliques
   }
 
-  def bronKerboschPivot(r: Set[Int], oldP: Set[Int], oldX: Set[Int], graph: Array[Truss.Edge], oldCliques: Array[Array[Int]]): Array[Array[Int]] = {
-    //if (r.size + oldP.size <= maxCliqueSize)
-    //  return oldCliques
+  def bronKerboschPivot(r: Set[Int], oldP: Set[Int], oldX: Set[Int], graph: Array[Truss.Edge], oldCliques: Array[Array[Int]], maxCliqueSize: Int): Array[Array[Int]] = {
+    if (r.size + oldP.size < maxCliqueSize)
+      return oldCliques
     var x = oldX
     var p = oldP
     var cliques = oldCliques
@@ -85,7 +74,7 @@ object Clique {
     val pMinusPivot = p -- getNeighbors(pivot, graph)
     pMinusPivot.foreach(v => {
       val neighbors = getNeighbors(v, graph)
-      cliques = cliques ++ bronKerboschPivot(r + v, p.intersect(neighbors), x.intersect(neighbors), graph, Array())
+      cliques = cliques ++ bronKerboschPivot(r + v, p.intersect(neighbors), x.intersect(neighbors), graph, Array(), maxCliqueSize)
       p = p - v
       x = x + v
     })
