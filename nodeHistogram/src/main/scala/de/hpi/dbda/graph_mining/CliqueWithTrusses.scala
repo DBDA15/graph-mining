@@ -17,11 +17,10 @@ object CliqueWithTrusses {
 
     //calculate initial k
     var k = 0
+    var oldk = 0
     while ((k < largestNDegrees.length)  && (k < largestNDegrees(k))){
       k += 1
     }
-
-    println("inital k: " + k)
 
     //var maxCliqueSize = sc.broadcast(0)
     //var maxClique = sc.broadcast(Array[Int]())
@@ -30,7 +29,8 @@ object CliqueWithTrusses {
     var maxCliqueSize = 0
     var maxCliques: RDD[Array[Int]] = sc.emptyRDD
 
-    while (k > maxCliqueSize && k > 2){
+    while ((k > maxCliqueSize || (oldk != k -1 && oldk>maxCliqueSize)) && k > 2){
+      println("k: " + k)
       val trusses = Truss.calculateTrusses(k-2, graph)
 
       //partiton
@@ -74,7 +74,8 @@ object CliqueWithTrusses {
 //        maxClique = sc.broadcast(maxCliqueLocal)
 //      }
       //maxClique.foreach(e => println(e))
-      k = k-1
+      oldk = k
+      k = k-Math.ceil(k*0.1).toInt
       partitionedEdgeComponents.unpersist()
       result.unpersist()
     }

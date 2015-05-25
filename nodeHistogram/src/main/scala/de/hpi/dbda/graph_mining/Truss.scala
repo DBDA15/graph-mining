@@ -103,7 +103,7 @@ object Truss {
     val filteredTriangles = triangles
       .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
 
-    missedEdges.unpersist()
+  //  missedEdges.unpersist()
 
     filteredTriangles
   }
