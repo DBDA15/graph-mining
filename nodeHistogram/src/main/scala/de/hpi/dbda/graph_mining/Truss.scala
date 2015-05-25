@@ -83,9 +83,7 @@ object Truss {
   }
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
-    val edgeCombinations = graph.map(edge => {
-      (edge.vertex1, edge)
-    })
+    val edgeCombinations = graph.keyBy(edge => edge.vertex1)
 
     //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
     val missedEdges = edgeCombinations
@@ -126,8 +124,10 @@ object Truss {
 
     var graph = firstGraph
 
-    while(graph.count() != graphOldCount) {
-      graphOldCount = graph.count()
+    var graphCount = graph.count()
+
+    while(graphCount != graphOldCount) {
+      graphOldCount = graphCount
 
       val triangles = getTriangles(graph)
 
@@ -138,6 +138,7 @@ object Truss {
       graph = triangleCountPerEdge.filter(count => count._2 >= k).map(edgeCount => edgeCount._1)
 
       graph.persist(StorageLevel.MEMORY_AND_DISK)
+      graphCount = graph.count()
     }
 
     val components = findRemainingGraphComponents(graph)
