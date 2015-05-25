@@ -94,16 +94,18 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    val missedEdgesPersist = missedEdges.persist(StorageLevel.MEMORY_AND_DISK)
+    missedEdges.persist(StorageLevel.MEMORY_AND_DISK)
 
     val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = missedEdgesPersist
+    val triangles = missedEdges
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
     //eliminate all duplicates
     val filteredTriangles = triangles
       .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
+
+    missedEdges.unpersist()
 
     filteredTriangles
   }
@@ -120,9 +122,9 @@ object Truss {
 
   def calculateTrusses(k:Int, firstGraph:RDD[Truss.Edge]): RDD[(Int, Truss.Edge)] ={
 
-    var graph = firstGraph
-
     var graphOldCount:Long = 0
+
+    var graph = firstGraph
 
     while(graph.count() != graphOldCount) {
       graphOldCount = graph.count()
@@ -134,26 +136,33 @@ object Truss {
       val triangleCountPerEdge = singleEdges.reduceByKey((count1, count2) => count1 + count2)
 
       graph = triangleCountPerEdge.filter(count => count._2 >= k).map(edgeCount => edgeCount._1)
+
+      graph.persist(StorageLevel.MEMORY_AND_DISK)
     }
 
     val components = findRemainingGraphComponents(graph)
 
     //convert into zone => edge mappings
-    val edgePerVertex = graph.map(edge => (edge.vertex1, edge))
     val vertexInZComponent = components.map(zoneVertex => (zoneVertex._2, zoneVertex._1))
+    vertexInZComponent.persist(StorageLevel.MEMORY_AND_DISK)
+    val edgePerVertex = graph.map(edge => (edge.vertex1, edge))
     val edgeInComponent = edgePerVertex
       .join(vertexInZComponent)
       .map(e => (e._2._2, e._2._1))
+    vertexInZComponent.unpersist()
 
     edgeInComponent
   }
 
   def findRemainingGraphComponents(graph:RDD[Truss.Edge]): RDD[(Int, Vertex)] ={
+
+    var interZoneEdgeCounter = 1
+
     //build zone file
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1.id)), (edge.vertex2, ( edge.vertex2, edge.vertex2.id))))
     .reduceByKey((zone1, zone2) => zone1)
 
-    var interZoneEdgeCounter = 1
+    zones.persist(StorageLevel.MEMORY_AND_DISK)
 
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
@@ -176,6 +185,8 @@ object Truss {
           list.distinct
         })
 
+      edgeZonesCombined.persist(StorageLevel.MEMORY_AND_DISK)
+
       //calculate interZoneCount
       if (edgeZonesCombined.isEmpty()) interZoneEdgeCounter = 0
       else {
@@ -192,12 +203,15 @@ object Truss {
         sortedZones.map(zone => (zone, smallestZone))
       }
 
+      edgeZonesCombined.unpersist()
+
       //reduce3
-      val zoneVertex = zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
       val bestZonePerZone = interZoneEdges.reduceByKey((zone1, zone2) => if (zone1< zone2) zone1 else zone2)
+      val zoneVertex = zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
       val verticesWithNewZones = zoneVertex.join(bestZonePerZone)
 
       zones = verticesWithNewZones.map(v => (v._2._1, v._2))
+      zones.persist(StorageLevel.MEMORY_AND_DISK)
     }
 
     zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))

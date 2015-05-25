@@ -21,7 +21,6 @@ object CliqueWithTrusses {
       k += 1
     }
 
-    k = 5
     println("inital k: " + k)
 
     //var maxCliqueSize = sc.broadcast(0)
@@ -34,19 +33,6 @@ object CliqueWithTrusses {
     while (k > maxCliqueSize && k > 2){
       val trusses = Truss.calculateTrusses(k-2, graph)
 
-      /*
-        trusses.foreach truss
-          cliques = calculate cliques in truss
-          if cliques found:
-            if size of largestClique > maxCliqueSize
-              maxClique = clique
-              broadcast new maxCliqueSize
-            else
-              nothing
-          else
-            nothing
-        k = k - 1
-      */
       //partiton
       val partitions = Math.max(trusses.map(_._1).distinct().count(), 100).toInt
       val partitionedEdgeComponents =
@@ -55,7 +41,6 @@ object CliqueWithTrusses {
 
       //all vertices in component, check if every edge exists -> if yes clique
       val groupedEdgesPerTruss = partitionedEdgeComponents.groupByKey()
-
 
      // var maxCliqueSizeLocal = 0//maxCliqueSize.value
      // var maxCliqueLocal = Array[Int]()//maxClique.value
@@ -82,6 +67,7 @@ object CliqueWithTrusses {
 //        println("max clique size " + maxCliqueSize + " resultsize " + result.count())
 //
         maxCliques = result.filter(c => c.length == maxCliqueSize)
+        maxCliques.persist(StorageLevel.DISK_ONLY)
       }
 //      if (maxCliqueSize.value < maxCliqueSizeLocal){
 //        maxCliqueSize = sc.broadcast(maxCliqueSizeLocal)
@@ -89,6 +75,8 @@ object CliqueWithTrusses {
 //      }
       //maxClique.foreach(e => println(e))
       k = k-1
+      partitionedEdgeComponents.unpersist()
+      result.unpersist()
     }
     maxCliques.foreach(e => println(e.foreach(i => print(i + " , "))))
   }
