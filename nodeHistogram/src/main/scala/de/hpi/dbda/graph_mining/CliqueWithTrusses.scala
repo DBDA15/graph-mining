@@ -74,20 +74,19 @@ object CliqueWithTrusses {
 
       result.persist(StorageLevel.MEMORY_AND_DISK)
 
-      println("max clique size " + maxCliqueSize + " resultsize " + result.count())
+    //  println("max clique size " + maxCliqueSize + " resultsize " + result.count())
 
       if (!result.isEmpty()) {
         maxCliqueSize = result.max()(Ordering[Int].on(e => e.length)).length
 
-        println("max clique size " + maxCliqueSize + " resultsize " + result.count())
-
+//        println("max clique size " + maxCliqueSize + " resultsize " + result.count())
+//
         maxCliques = result.filter(c => c.length == maxCliqueSize)
       }
 //      if (maxCliqueSize.value < maxCliqueSizeLocal){
 //        maxCliqueSize = sc.broadcast(maxCliqueSizeLocal)
 //        maxClique = sc.broadcast(maxCliqueLocal)
 //      }
-      println("##########################################################################################")
       //maxClique.foreach(e => println(e))
       k = k-1
     }
