@@ -78,7 +78,7 @@ object CliqueWithTrusses {
       partitionedEdgeComponents.unpersist()
       result.unpersist()
     }
-    maxCliques.foreach(e => println(e.foreach(i => print(i + " , "))))
+    //maxCliques.foreach(e => println(e.foreach(i => print(i + " , "))))
     maxCliques
   }
 
