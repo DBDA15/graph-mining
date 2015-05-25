@@ -1,6 +1,6 @@
 package de.hpi.dbda.graph_mining
 
-import org.apache.spark.HashPartitioner
+import org.apache.spark.{SparkContext, HashPartitioner}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
@@ -9,24 +9,24 @@ import org.apache.spark.storage.StorageLevel
  */
 object CliqueWithTrusses {
 
-  def maximumClique( rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
+  def maximumClique( graph:RDD[Truss.Edge], outputDir:String, sc:SparkContext): Unit ={
     val cliqueOut = outputDir + "/cliques"
-
-    val graph:RDD[Truss.Edge] = Truss.convertGraph(rawGraph, seperator)
 
     val degrees = Truss.calculateDegrees(graph).map(x=> x._2)
     val largestNDegrees = degrees.takeOrdered(Math.sqrt(degrees.count()).toInt)(Ordering[Int].reverse)
 
     //calculate initial k
     var k = 0
-    while (k < largestNDegrees(k)){
+    while ((k < largestNDegrees.length)  && (k < largestNDegrees(k))){
       k += 1
     }
 
-    var maxCliqueSize = 0
-    var maxClique:Array[Int] = Array[Int]()
+    println("inital k: " + k)
 
-    while (k > maxCliqueSize){
+    var maxCliqueSize = sc.broadcast(0)
+    var maxClique = sc.broadcast(Array[Int]())
+
+    while (k > maxCliqueSize.value && k > 2){
       val trusses = Truss.calculateTrusses(k-2, graph)
 
       /*
@@ -51,19 +51,35 @@ object CliqueWithTrusses {
       //all vertices in component, check if every edge exists -> if yes clique
       val groupedEdgesPerTruss = partitionedEdgeComponents.groupByKey()
 
-      groupedEdgesPerTruss.foreach{truss =>
+
+      var maxCliqueSizeLocal = 0//maxCliqueSize.value
+      var maxCliqueLocal = Array[Int]()//maxClique.value
+
+      val result = groupedEdgesPerTruss.map{truss =>
         val cliques = Clique.calculateCliques(truss._2.toArray)
-        if (cliques.length > 0 ){
+        if (cliques.length > 0 ) {
           val largestClique = cliques.maxBy(clique => clique.length)
-          if (largestClique.length > maxCliqueSize){
-            maxClique = largestClique
-            maxCliqueSize = largestClique.length
+          if (largestClique.length > maxCliqueSizeLocal) {
+            maxCliqueLocal = largestClique
+            maxCliqueSizeLocal = largestClique.length
+
+            maxCliqueLocal.foreach(e => println(e))
+            maxCliqueLocal.toList
             //TODO broadCast?
-          }
-        }
-        k = k-1
+          } else List()
+        }else List()
       }
+
+//      if (maxCliqueSize.value < maxCliqueSizeLocal){
+//        maxCliqueSize = sc.broadcast(maxCliqueSizeLocal)
+//        maxClique = sc.broadcast(maxCliqueLocal)
+//      }
+      println("##########################################################################################")
+      result.foreach(e=> e.foreach(i => println(i)))
+      maxCliqueLocal.foreach(e => println(e))
+      k = k-1
     }
+//    maxClique.value.foreach(e => println(e))
   }
 
 }

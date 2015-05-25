@@ -5,6 +5,8 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
 import org.apache.spark.rdd.RDD
 
+import org.apache.log4j.{Level, Logger}
+
 object GraphMiningSpark extends App {
 
   val splitCharacter_Wikipedia = " "
@@ -32,6 +34,13 @@ object GraphMiningSpark extends App {
 
   @Override
   override def main(args: Array[String]) {
+
+    // ...
+    val level = Level.WARN
+    Logger.getLogger("org").setLevel(level)
+    Logger.getLogger("akka").setLevel(level)
+
+
     val mode = args(0)
     val inputPath = args(1)
     val outputPath = args(2)
@@ -56,6 +65,10 @@ object GraphMiningSpark extends App {
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
+
+    if(mode.equals("clique"))
+      CliqueWithTrusses.maximumClique(Truss.convertGraph(context.textFile(inputPath), seperator), outputPath, context)
+
 
     //TODO: Remove - Testing only: calculates the degree of all nodes and orders the result
     if(mode.equals("degree"))
