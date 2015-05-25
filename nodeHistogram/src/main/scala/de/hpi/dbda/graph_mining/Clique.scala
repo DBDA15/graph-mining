@@ -13,8 +13,8 @@ object Clique {
 
     val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array())
 
-    cliques.foreach({c => c.foreach(v => print(v + ", "))
-      println(" ")})
+//    cliques.foreach({c => c.foreach(v => print(v + ", "))
+//      println(" ")})
     cliques
   }
 
@@ -23,8 +23,8 @@ object Clique {
 
     val cliques = bronKerboschPivot(Set(), vertexSet, Set(), graphArray, Array())
 
-    cliques.foreach({c => c.foreach(v => print(v + ", "))
-      println(" ")})
+//    cliques.foreach({c => c.foreach(v => print(v + ", "))
+//      println(" ")})
     cliques
   }
 

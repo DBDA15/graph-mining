@@ -21,12 +21,17 @@ object CliqueWithTrusses {
       k += 1
     }
 
+    k = 5
     println("inital k: " + k)
 
-    var maxCliqueSize = sc.broadcast(0)
-    var maxClique = sc.broadcast(Array[Int]())
+    //var maxCliqueSize = sc.broadcast(0)
+    //var maxClique = sc.broadcast(Array[Int]())
 
-    while (k > maxCliqueSize.value && k > 2){
+
+    var maxCliqueSize = 0
+    var maxCliques: RDD[Array[Int]] = sc.emptyRDD
+
+    while (k > maxCliqueSize && k > 2){
       val trusses = Truss.calculateTrusses(k-2, graph)
 
       /*
@@ -52,34 +57,41 @@ object CliqueWithTrusses {
       val groupedEdgesPerTruss = partitionedEdgeComponents.groupByKey()
 
 
-      var maxCliqueSizeLocal = 0//maxCliqueSize.value
-      var maxCliqueLocal = Array[Int]()//maxClique.value
+     // var maxCliqueSizeLocal = 0//maxCliqueSize.value
+     // var maxCliqueLocal = Array[Int]()//maxClique.value
 
-      val result = groupedEdgesPerTruss.map{truss =>
+      val result = groupedEdgesPerTruss.flatMap{truss =>
         val cliques = Clique.calculateCliques(truss._2.toArray)
         if (cliques.length > 0 ) {
-          val largestClique = cliques.maxBy(clique => clique.length)
-          if (largestClique.length > maxCliqueSizeLocal) {
-            maxCliqueLocal = largestClique
-            maxCliqueSizeLocal = largestClique.length
-
-            maxCliqueLocal.foreach(e => println(e))
-            maxCliqueLocal.toList
+          val largestCliqueSize = cliques.maxBy(clique => clique.length).length
+          val largestCliques = cliques.filter(c => c.length == largestCliqueSize)
+          if (largestCliqueSize >= maxCliqueSize) {
+            largestCliques
             //TODO broadCast?
           } else List()
         }else List()
       }
 
+      result.persist(StorageLevel.MEMORY_AND_DISK)
+
+      println("max clique size " + maxCliqueSize + " resultsize " + result.count())
+
+      if (!result.isEmpty()) {
+        maxCliqueSize = result.max()(Ordering[Int].on(e => e.length)).length
+
+        println("max clique size " + maxCliqueSize + " resultsize " + result.count())
+
+        maxCliques = result.filter(c => c.length == maxCliqueSize)
+      }
 //      if (maxCliqueSize.value < maxCliqueSizeLocal){
 //        maxCliqueSize = sc.broadcast(maxCliqueSizeLocal)
 //        maxClique = sc.broadcast(maxCliqueLocal)
 //      }
       println("##########################################################################################")
-      result.foreach(e=> e.foreach(i => println(i)))
-      maxCliqueLocal.foreach(e => println(e))
+      //maxClique.foreach(e => println(e))
       k = k-1
     }
-//    maxClique.value.foreach(e => println(e))
+    maxCliques.foreach(e => println(e.foreach(i => print(i + " , "))))
   }
 
 }
