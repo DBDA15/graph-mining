@@ -79,8 +79,9 @@ object GraphMiningSpark extends App {
     if(mode.equals("cliqueSingle")) {
       val cliqueResult = Clique.calculateCliques(Truss.convertGraph(context.textFile(inputPath), seperator).collect(), 0)
       val printWriter = new PrintWriter(new File(outputPath))
-      cliqueResult.foreach(a => {a.foreach(l => printWriter.print(l))
+      cliqueResult.foreach(a => {a.foreach(l => printWriter.print(l + ", "))
         printWriter.println()})
+      printWriter.close()
     }
 
   }
