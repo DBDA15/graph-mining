@@ -9,14 +9,18 @@ import org.apache.spark.rdd.RDD
  */
 object MaximalTruss {
 
-  def maximumTruss(graph: RDD[Edge], context:SparkContext): Unit ={
+  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String): Unit ={
 
-    val k = 5
+    val outputFile = outputPath + "/maximalTruss"
 
-    val result = recursiveTruss(5, 0 ,2, List(graph), context)
-    result.foreach{t =>
-      t.foreach(e => print(e + ", "))
-      println("")}
+    val k = 10
+
+    val result = recursiveTruss(k, 0 ,2, List(graph), context)
+//    result.foreach{t =>
+//      t.foreach(e => print(e + ", "))
+//      println("")}
+
+    result.foreach(t => t.saveAsTextFile(outputFile))
   }
 
 
