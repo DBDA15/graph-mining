@@ -1,5 +1,7 @@
 package de.hpi.dbda.graph_mining
 
+import java.io.{File, PrintWriter}
+
 import de.hpi.dbda.graph_mining.Truss.Edge
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -11,7 +13,7 @@ object MaximalTruss {
 
   def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String): Unit ={
 
-    val outputFile = outputPath + "/maximalTruss"
+    val outputFile = outputPath + "/maximalTruss/truss"
 
     val k = 10
 
@@ -20,7 +22,18 @@ object MaximalTruss {
 //      t.foreach(e => print(e + ", "))
 //      println("")}
 
-    result.foreach(t => t.saveAsTextFile(outputFile))
+   // result.foreach(t => t.saveAsTextFile(outputFile))
+
+    result.zipWithIndex.foreach { case (t, i) =>
+
+      val truss = t.collect()
+      val vertexSet = Clique.getVertexSet(truss)
+      val printWriter = new PrintWriter(new File(outputFile + i.toString))
+      vertexSet.foreach(a => {
+        printWriter.println(a)
+      })
+      printWriter.close()
+    }
   }
 
 
@@ -36,6 +49,7 @@ object MaximalTruss {
       val foundTrusses = graphs.flatMap{ graph =>
         val trusses = Truss.calculateTrusses(k-2, graph)
         val groupedEdgesPerTruss = trusses.groupByKey()
+        groupedEdgesPerTruss.persist()
         val x = groupedEdgesPerTruss.collect()
           .map(e => context.parallelize(e._2.toSeq)).toList
         x
