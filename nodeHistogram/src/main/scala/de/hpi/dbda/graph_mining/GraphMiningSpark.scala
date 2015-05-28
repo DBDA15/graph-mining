@@ -61,6 +61,9 @@ object GraphMiningSpark extends App {
     if (mode.equals("triangle"))
       Truss.getTrianglesAndSave(context.textFile(inputPath), outputPath, seperator)
 
+    if(mode.equals("triangleNoSpark"))
+      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath), outputPath, seperator)
+
     if (mode.equals("truss"))
       Truss.calcTrussesAndSave(2, context.textFile(inputPath), outputPath, seperator)
 
