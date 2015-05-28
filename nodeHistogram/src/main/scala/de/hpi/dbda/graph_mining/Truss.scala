@@ -68,7 +68,9 @@ object Truss {
     // sort edges
 
     val uniqueTriangles = getTriangles(graph)
-    uniqueTriangles.saveAsTextFile(triangleOut)
+    val count = uniqueTriangles.count()
+    println(count)
+//    uniqueTriangles.saveAsTextFile(triangleOut)
 
 //    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
 
@@ -92,7 +94,8 @@ object Truss {
     // sort edges
 
     val uniqueTriangles = getTrianglesNoSpark(graph)
-    uniqueTriangles.saveAsTextFile(triangleOut)
+    val count = uniqueTriangles.count()
+    println(count)
 
 //    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
 
