@@ -37,9 +37,9 @@ object GraphMiningSpark extends App {
   override def main(args: Array[String]) {
 
     // ...
-    val level = Level.WARN
-    Logger.getLogger("org").setLevel(level)
-    Logger.getLogger("akka").setLevel(level)
+//    val level = Level.WARN
+//    Logger.getLogger("org").setLevel(level)
+//    Logger.getLogger("akka").setLevel(level)
 
 
     val mode = args(0)
