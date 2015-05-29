@@ -63,8 +63,8 @@ object Truss {
     val circularTriangleOut = outputDir + "/circular"
 //    val nonCircularTriangleOut = outputDir + "/nonCircular"
 
-
-    val graph = convertGraph(rawGraph, seperator)
+    val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
+//    val graph = convertGraph(rawGraph, seperator)
     // sort edges
 
     val uniqueTriangles = getTriangles(graph)
