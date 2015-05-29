@@ -11,11 +11,11 @@ import org.apache.spark.rdd.RDD
  */
 object MaximalTruss {
 
-  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String): Unit ={
+  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String, stringk:String): Unit ={
 
     val outputFile = outputPath + "/maximalTruss/truss"
 
-    val k = 10
+    val k = stringk.toInt
 
     val degreedGraph = Truss.addDegreesToGraph(graph)
     val result = recursiveTruss(k, 0 ,2, List(degreedGraph), context)

@@ -46,8 +46,12 @@ object GraphMiningSpark extends App {
     val inputPath = args(1)
     val outputPath = args(2)
     var seperator = "\t"
+    var k = 10
 
-    if (args.length > 3) seperator = args(3)
+    if (args.length > 3) {
+      seperator = args(3)
+    }
+
 
     val conf = new SparkConf()
     conf.setAppName(GraphMiningSpark.getClass.getName)
@@ -68,7 +72,7 @@ object GraphMiningSpark extends App {
       Truss.calcTrussesAndSave(2, context.textFile(inputPath, 10), outputPath, seperator)
 
     if(mode.equals("maxtruss"))
-      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath)
+      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
