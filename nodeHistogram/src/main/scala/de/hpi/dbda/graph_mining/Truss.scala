@@ -178,7 +178,7 @@ object Truss {
   def calcTrussesAndSave(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
     val trussOut = outputDir + "/truss"
 
-    val graph:RDD[Truss.Edge] = convertGraph(rawGraph, seperator)
+    val graph:RDD[Truss.Edge] = addDegreesToGraph(convertGraph(rawGraph, seperator))
     val trusses = calculateTrusses(k, graph)
     trusses.saveAsTextFile(trussOut)
   }

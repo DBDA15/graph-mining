@@ -37,9 +37,9 @@ object GraphMiningSpark extends App {
   override def main(args: Array[String]) {
 
     // ...
-//    val level = Level.WARN
-//    Logger.getLogger("org").setLevel(level)
-//    Logger.getLogger("akka").setLevel(level)
+    val level = Level.WARN
+    Logger.getLogger("org").setLevel(level)
+    Logger.getLogger("akka").setLevel(level)
 
 
     val mode = args(0)
@@ -65,10 +65,10 @@ object GraphMiningSpark extends App {
       Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, 10), outputPath, seperator)
 
     if (mode.equals("truss"))
-      Truss.calcTrussesAndSave(2, context.textFile(inputPath), outputPath, seperator)
+      Truss.calcTrussesAndSave(2, context.textFile(inputPath, 10), outputPath, seperator)
 
     if(mode.equals("maxtruss"))
-      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath), seperator), context, outputPath)
+      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath)
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
