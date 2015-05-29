@@ -111,12 +111,13 @@ object Truss {
   }
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
-    val edgeCombinations = graph//.filter(edge => edge.vertex1.degree > 1)
+    val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
         .keyBy(edge => edge.vertex1)
 
     //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
     val missedEdges = edgeCombinations
       .join(edgeCombinations)
+      .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
       .map( combination => {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
@@ -307,9 +308,9 @@ object Truss {
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
     if (vert1.degree > vert2.degree) new Edge(vert1, vert2, true)
-//    else
-//      if (vert1.degree == vert2.degree && vert1.id < vert2.id)
-//        new Edge(vert1, vert2, true)
+    else
+      if (vert1.degree == vert2.degree && vert1.id < vert2.id)
+        new Edge(vert1, vert2, true)
       else new Edge(vert2, vert1, false)
   }
 
