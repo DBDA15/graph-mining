@@ -111,22 +111,29 @@ object Truss {
   }
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
+    val allEdges = graph.map(edge => (edge, List(edge)))
+    allEdges.persist(StorageLevel.DISK_ONLY)
+
+//    allEdges.saveAsTextFile("output/all/allEdges")
+
     val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
         .keyBy(edge => edge.vertex1)
 
     //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
     val missedEdges = edgeCombinations
       .join(edgeCombinations)
+
+//    missedEdges.saveAsTextFile("output/all/missedEdges")
+
+    val t = missedEdges
       .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
       .map( combination => {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    missedEdges.persist(StorageLevel.MEMORY_AND_DISK)
-
-    val allEdges = graph.map(edge => (edge, List(edge)))
+//    t.saveAsTextFile("output/all/t")
 //    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = missedEdges
+    val triangles = t
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
@@ -293,17 +300,10 @@ object Truss {
   }
 
   def getOuterTriangleVertices(combination:(Vertex, (Truss.Edge, Truss.Edge))): Edge ={
-    val innerVertex = combination._1
     val edge1 = combination._2._1
     val edge2 = combination._2._2
 
-    val outerVertex1:Vertex = if (edge1.vertex1.id != innerVertex.id) edge1.vertex1 else edge1.vertex2
-    val outerVertex2:Vertex = if (edge2.vertex1.id != innerVertex.id) edge2.vertex1 else edge2.vertex2
-
-    createEdge(outerVertex1, outerVertex2)
-//    if (outerVertex1.id > outerVertex2.id)
-//           (outerVertex1, outerVertex2)
-//    else (outerVertex2, outerVertex1)
+    createEdge(edge1.vertex2, edge2.vertex2)
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
