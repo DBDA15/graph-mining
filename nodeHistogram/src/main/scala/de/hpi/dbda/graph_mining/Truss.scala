@@ -8,42 +8,41 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(var vertex1:Vertex, var vertex2:Vertex, var original:Boolean){
-    def replace(newEdge:Edge): Unit ={
-      vertex1 = newEdge.vertex1
-      vertex2 = newEdge.vertex2
-      original = newEdge.original
-    }
+  case class Edge(var vertex1:Vertex, var vertex2:Vertex){
+//    def replace(newEdge:Edge): Unit ={
+//      vertex1 = newEdge.vertex1
+//      vertex2 = newEdge.vertex2
+//    }
   }
 
   case class Triangle(edges:List[Edge]){
 
-    //check for circle
-    def isCircular: Boolean={
-        var e1_v1 = this.edges.head.vertex1.id
-        var e1_v2 = this.edges.head.vertex2.id
-        var e2_v1 = this.edges(1).vertex1.id
-        var e2_v2 = this.edges(1).vertex2.id
-        var e3_v1 = this.edges(2).vertex1.id
-        var e3_v2 = this.edges(2).vertex2.id
-
-        if (!this.edges.head.original) {
-          e1_v1 = this.edges.head.vertex2.id
-          e1_v2 = this.edges.head.vertex1.id
-        }
-
-        if (!this.edges(1).original) {
-          e2_v1 = this.edges(1).vertex2.id
-          e2_v2 = this.edges(1).vertex1.id
-        }
-
-        if (!this.edges(2).original) {
-          e3_v1 = this.edges(2).vertex2.id
-          e3_v2 = this.edges(2).vertex1.id
-        }
-
-        xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
-    }
+//    //check for circle
+//    def isCircular: Boolean={
+//        var e1_v1 = this.edges.head.vertex1.id
+//        var e1_v2 = this.edges.head.vertex2.id
+//        var e2_v1 = this.edges(1).vertex1.id
+//        var e2_v2 = this.edges(1).vertex2.id
+//        var e3_v1 = this.edges(2).vertex1.id
+//        var e3_v2 = this.edges(2).vertex2.id
+//
+//        if (!this.edges.head.original) {
+//          e1_v1 = this.edges.head.vertex2.id
+//          e1_v2 = this.edges.head.vertex1.id
+//        }
+//
+//        if (!this.edges(1).original) {
+//          e2_v1 = this.edges(1).vertex2.id
+//          e2_v2 = this.edges(1).vertex1.id
+//        }
+//
+//        if (!this.edges(2).original) {
+//          e3_v1 = this.edges(2).vertex2.id
+//          e3_v2 = this.edges(2).vertex1.id
+//        }
+//
+//        xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
+//    }
 
     def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
   }
@@ -307,11 +306,11 @@ object Truss {
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    if (vert1.degree > vert2.degree) new Edge(vert1, vert2, true)
+    if (vert1.degree > vert2.degree) new Edge(vert1, vert2)
     else
       if (vert1.degree == vert2.degree && vert1.id < vert2.id)
-        new Edge(vert1, vert2, true)
-      else new Edge(vert2, vert1, false)
+        new Edge(vert1, vert2)
+      else new Edge(vert2, vert1)
   }
 
   def addDegreesToGraph(graph:RDD[Edge]): RDD[Edge] ={
@@ -321,11 +320,9 @@ object Truss {
     graph
       .keyBy(e => e.vertex1.id)
       .join(degree)
-      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, e._2._1.original)))
+      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2)))
       .join(degree)
-      .map(e => {if (e._2._1.original)
-          createEdge(e._2._1.vertex1, new Vertex(e._1, e._2._2))
-        else
+      .map(e => {
           createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)
         })
   }
