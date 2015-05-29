@@ -110,8 +110,8 @@ object Truss {
   }
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
-    val allEdges = graph.map(edge => (edge, List(edge)))
-    allEdges.persist(StorageLevel.DISK_ONLY)
+    val allEdges1 = graph.map(edge => (edge, List(edge)))
+    val allEdges = allEdges1.persist(StorageLevel.DISK_ONLY)
 
 //    allEdges.saveAsTextFile("output/all/allEdges")
 
@@ -130,10 +130,11 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    t.persist(StorageLevel.DISK_ONLY)
+    val t1 = t.persist(StorageLevel.DISK_ONLY)
+
 //    t.saveAsTextFile("output/all/t")
 //    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = t
+    val triangles = t1
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 

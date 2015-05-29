@@ -59,10 +59,10 @@ object GraphMiningSpark extends App {
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("triangle"))
-      Truss.getTrianglesAndSave(context.textFile(inputPath), outputPath, seperator)
+      Truss.getTrianglesAndSave(context.textFile(inputPath, 10), outputPath, seperator)
 
     if(mode.equals("triangleNoSpark"))
-      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath), outputPath, seperator)
+      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, 10), outputPath, seperator)
 
     if (mode.equals("truss"))
       Truss.calcTrussesAndSave(2, context.textFile(inputPath), outputPath, seperator)
