@@ -140,7 +140,7 @@ object Truss {
 
 
   def getTrianglesNoSpark(graph:RDD[Edge]): RDD[Triangle] ={
-    val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
+    val edgeCombinations = graph//.filter(edge => edge.vertex1.degree > 1)
       .map{edge => (edge.vertex1, edge)}
 
     //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
@@ -172,8 +172,8 @@ object Truss {
     }
 
 //    //eliminate all duplicates
-//    val filteredTriangles = triangles
-//      .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
+    val filteredTriangles = triangles
+      .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
 
     //  missedEdges.unpersist()
 
