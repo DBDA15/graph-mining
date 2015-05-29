@@ -136,10 +136,6 @@ object Truss {
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
-//    //eliminate all duplicates
-//    val filteredTriangles = triangles
-//      .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
-
   //  missedEdges.unpersist()
 
     triangles
@@ -148,7 +144,7 @@ object Truss {
 
 
   def getTrianglesNoSpark(graph:RDD[Edge]): RDD[Triangle] ={
-    val edgeCombinations = graph//.filter(edge => edge.vertex1.degree > 1)
+    val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
       .map{edge => (edge.vertex1, edge)}
 
     //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
@@ -157,6 +153,7 @@ object Truss {
       .groupByKey()
       .flatMap{vedge  =>
           vedge._2.flatMap{ p => vedge._2.filter(p1 => p1 != p).map(p1 => (vedge._1, (p1, p))) }}
+      .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
       .map( combination => {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
@@ -178,12 +175,6 @@ object Truss {
           case None => List()
         }
     }
-
-//    //eliminate all duplicates
-    val filteredTriangles = triangles
-      .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
-
-    //  missedEdges.unpersist()
 
     triangles
   }
