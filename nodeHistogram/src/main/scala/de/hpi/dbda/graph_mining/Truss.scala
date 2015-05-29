@@ -111,7 +111,7 @@ object Truss {
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
     val allEdges1 = graph.map(edge => (edge, List(edge)))
-    val allEdges = allEdges1.persist(StorageLevel.DISK_ONLY)
+    val allEdges = allEdges1.persist(StorageLevel.MEMORY_AND_DISK)
 
 //    allEdges.saveAsTextFile("output/all/allEdges")
 
@@ -124,18 +124,17 @@ object Truss {
 
 //    missedEdges.saveAsTextFile("output/all/missedEdges")
 
-    val t = missedEdges
+    val triads = missedEdges
       .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
       .map( combination => {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    val t1 = t.repartition(10)
-    val t2 = t1.persist(StorageLevel.DISK_ONLY)
+    val t1 = triads.repartition(10)
 
 //    t.saveAsTextFile("output/all/t")
 //    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = t2
+    val triangles = t1
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
@@ -147,6 +146,10 @@ object Truss {
 
 
   def getTrianglesNoSpark(graph:RDD[Edge]): RDD[Triangle] ={
+    val allEdges1 = graph.map(edge => (edge, List(edge)))
+    val allEdges = allEdges1.persist(StorageLevel.MEMORY_AND_DISK)
+
+
     val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
       .map{edge => (edge.vertex1, edge)}
 
@@ -161,9 +164,9 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    val allEdges = graph.map(edge => (edge, List(edge)))
-//    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triadsAndSingleEdges = triads.union(allEdges)
+    val triads1 = triads.repartition(10)
+
+    val triadsAndSingleEdges = triads1.union(allEdges)
 
    //reduce2
     val triangles = triadsAndSingleEdges
