@@ -64,8 +64,8 @@ object Truss {
 //    val nonCircularTriangleOut = outputDir + "/nonCircular"
 
 
-//    val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
-    val graph = convertGraph(rawGraph, seperator)
+    val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
+//    val graph = convertGraph(rawGraph, seperator)
     // sort edges
 
     val uniqueTriangles = getTriangles(graph)
@@ -307,9 +307,9 @@ object Truss {
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
     if (vert1.degree > vert2.degree) new Edge(vert1, vert2, true)
-    else
-      if (vert1.degree == vert2.degree && vert1.id < vert2.id)
-        new Edge(vert1, vert2, true)
+//    else
+//      if (vert1.degree == vert2.degree && vert1.id < vert2.id)
+//        new Edge(vert1, vert2, true)
       else new Edge(vert2, vert1, false)
   }
 
