@@ -130,11 +130,12 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    val t1 = t.persist(StorageLevel.DISK_ONLY)
+    val t1 = t.repartition(10)
+    val t2 = t1.persist(StorageLevel.DISK_ONLY)
 
 //    t.saveAsTextFile("output/all/t")
 //    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = t1
+    val triangles = t2
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
