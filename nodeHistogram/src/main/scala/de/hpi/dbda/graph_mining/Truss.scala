@@ -70,9 +70,9 @@ object Truss {
     val uniqueTriangles = getTriangles(graph)
     uniqueTriangles.saveAsTextFile(triangleOut)
 
-    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
+//    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
 
-    circularTriangles.saveAsTextFile(circularTriangleOut)
+//    circularTriangles.saveAsTextFile(circularTriangleOut)
 
     /* //check for non circle
     val noncircularTriangles = uniqueTriangles.filter(edgeList =>{
