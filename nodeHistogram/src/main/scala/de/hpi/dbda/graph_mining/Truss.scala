@@ -8,42 +8,41 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(var vertex1:Vertex, var vertex2:Vertex, var original:Boolean){
-    def replace(newEdge:Edge): Unit ={
-      vertex1 = newEdge.vertex1
-      vertex2 = newEdge.vertex2
-      original = newEdge.original
-    }
+  case class Edge(var vertex1:Vertex, var vertex2:Vertex){
+//    def replace(newEdge:Edge): Unit ={
+//      vertex1 = newEdge.vertex1
+//      vertex2 = newEdge.vertex2
+//    }
   }
 
   case class Triangle(edges:List[Edge]){
 
-    //check for circle
-    def isCircular: Boolean={
-        var e1_v1 = this.edges.head.vertex1.id
-        var e1_v2 = this.edges.head.vertex2.id
-        var e2_v1 = this.edges(1).vertex1.id
-        var e2_v2 = this.edges(1).vertex2.id
-        var e3_v1 = this.edges(2).vertex1.id
-        var e3_v2 = this.edges(2).vertex2.id
-
-        if (!this.edges.head.original) {
-          e1_v1 = this.edges.head.vertex2.id
-          e1_v2 = this.edges.head.vertex1.id
-        }
-
-        if (!this.edges(1).original) {
-          e2_v1 = this.edges(1).vertex2.id
-          e2_v2 = this.edges(1).vertex1.id
-        }
-
-        if (!this.edges(2).original) {
-          e3_v1 = this.edges(2).vertex2.id
-          e3_v2 = this.edges(2).vertex1.id
-        }
-
-        xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
-    }
+//    //check for circle
+//    def isCircular: Boolean={
+//        var e1_v1 = this.edges.head.vertex1.id
+//        var e1_v2 = this.edges.head.vertex2.id
+//        var e2_v1 = this.edges(1).vertex1.id
+//        var e2_v2 = this.edges(1).vertex2.id
+//        var e3_v1 = this.edges(2).vertex1.id
+//        var e3_v2 = this.edges(2).vertex2.id
+//
+//        if (!this.edges.head.original) {
+//          e1_v1 = this.edges.head.vertex2.id
+//          e1_v2 = this.edges.head.vertex1.id
+//        }
+//
+//        if (!this.edges(1).original) {
+//          e2_v1 = this.edges(1).vertex2.id
+//          e2_v2 = this.edges(1).vertex1.id
+//        }
+//
+//        if (!this.edges(2).original) {
+//          e3_v1 = this.edges(2).vertex2.id
+//          e3_v2 = this.edges(2).vertex1.id
+//        }
+//
+//        xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
+//    }
 
     def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
   }
@@ -64,15 +63,43 @@ object Truss {
 //    val nonCircularTriangleOut = outputDir + "/nonCircular"
 
 
-    val graph = convertGraph(rawGraph, seperator)
+    val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
+//    val graph = convertGraph(rawGraph, seperator)
     // sort edges
 
     val uniqueTriangles = getTriangles(graph)
-    uniqueTriangles.saveAsTextFile(triangleOut)
+    val count = uniqueTriangles.count()
+    println(count)
+//    uniqueTriangles.saveAsTextFile(triangleOut)
 
-    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
+//    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
 
-    circularTriangles.saveAsTextFile(circularTriangleOut)
+//    circularTriangles.saveAsTextFile(circularTriangleOut)
+
+    /* //check for non circle
+    val noncircularTriangles = uniqueTriangles.filter(edgeList =>{
+     !(xor(edgeList(0)._1 == edgeList(1)._2, edgeList(0)._1 == edgeList(2)._2) && xor(edgeList(1)._1 == edgeList(0)._2, edgeList(1)._1 == edgeList(2)._2))
+    })
+
+    noncircularTriangles.saveAsTextFile(nonCircularTriangleOut)*/
+  }
+
+
+  def getTrianglesNoSparkAndSave(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
+    val triangleOut = outputDir + "/allNoSpark"
+    val circularTriangleOut = outputDir + "/circularNoSpark"
+    //    val nonCircularTriangleOut = outputDir + "/nonCircular"
+
+    val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
+    // sort edges
+
+    val uniqueTriangles = getTrianglesNoSpark(graph)
+    val count = uniqueTriangles.count()
+    println(count)
+
+//    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
+
+  //  circularTriangles.saveAsTextFile(circularTriangleOut)
 
     /* //check for non circle
     val noncircularTriangles = uniqueTriangles.filter(edgeList =>{
@@ -83,36 +110,75 @@ object Truss {
   }
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
-    val edgeCombinations = graph.keyBy(edge => edge.vertex1)
+    val allEdges1 = graph.map(edge => (edge, List(edge)))
+    val allEdges = allEdges1.persist(StorageLevel.MEMORY_AND_DISK)
 
-    //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
+    val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
+        .keyBy(edge => edge.vertex1)
+
     val missedEdges = edgeCombinations
       .join(edgeCombinations)
+
+
+    val triads = missedEdges
+      .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
       .map( combination => {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    missedEdges.persist(StorageLevel.MEMORY_AND_DISK)
+    val t1 = triads.repartition(10)
 
-    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
-    val triangles = missedEdges
+    val triangles = t1
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
-    //eliminate all duplicates
-    val filteredTriangles = triangles
-      .filter(triangle => triangle.edges.head.vertex2.id > triangle.edges(1).vertex2.id)
+    triangles
+  }
 
-  //  missedEdges.unpersist()
 
-    filteredTriangles
+  def getTrianglesNoSpark(graph:RDD[Edge]): RDD[Triangle] ={
+    val allEdges1 = graph.map(edge => (edge, List(edge)))
+    val allEdges = allEdges1.persist(StorageLevel.MEMORY_AND_DISK)
+
+
+    val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
+      .map{edge => (edge.vertex1, edge)}
+
+    val triads = edgeCombinations
+      .groupByKey()
+      .flatMap{vedge  =>
+          vedge._2.flatMap{ p => vedge._2.filter(p1 => p1 != p).map(p1 => (vedge._1, (p1, p))) }}
+      .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
+      .map( combination => {
+      (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
+    })
+
+    val triads1 = triads.repartition(10)
+
+    val triadsAndSingleEdges = triads1.union(allEdges)
+
+   //reduce2
+    val triangles = triadsAndSingleEdges
+      .groupByKey()
+      .flatMap{p =>
+        val edge = p._2.find(e => e.length == 1)
+        edge match{
+          case Some(s) => {
+            val edgePairs = p._2.filterNot(e => e.length == 1)
+             edgePairs.map(ep => Triangle(s ::: ep))
+        }
+          case None => List()
+        }
+    }
+
+    triangles
   }
 
 
   def calcTrussesAndSave(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
     val trussOut = outputDir + "/truss"
 
-    val graph:RDD[Truss.Edge] = convertGraph(rawGraph, seperator)
+    val graph:RDD[Truss.Edge] = addDegreesToGraph(convertGraph(rawGraph, seperator))
     val trusses = calculateTrusses(k, graph)
     trusses.saveAsTextFile(trussOut)
   }
@@ -135,9 +201,11 @@ object Truss {
 
       val triangleCountPerEdge = singleEdges.reduceByKey((count1, count2) => count1 + count2)
 
-      graph = triangleCountPerEdge.filter(count => count._2 >= k).map(edgeCount => edgeCount._1)
+      graph = triangleCountPerEdge
+        .filter(count => count._2 >= k)
+        .map(edgeCount => edgeCount._1)
+        .persist(StorageLevel.MEMORY_AND_DISK)
 
-      graph.persist(StorageLevel.MEMORY_AND_DISK)
       graphCount = graph.count()
     }
 
@@ -145,7 +213,7 @@ object Truss {
 
     //convert into zone => edge mappings
     val vertexInZComponent = components.map(zoneVertex => (zoneVertex._2, zoneVertex._1))
-    vertexInZComponent.persist(StorageLevel.MEMORY_AND_DISK)
+          .persist(StorageLevel.MEMORY_AND_DISK)
     val edgePerVertex = graph.map(edge => (edge.vertex1, edge))
     val edgeInComponent = edgePerVertex
       .join(vertexInZComponent)
@@ -162,8 +230,7 @@ object Truss {
     //build zone file
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1.id)), (edge.vertex2, ( edge.vertex2, edge.vertex2.id))))
     .reduceByKey((zone1, zone2) => zone1)
-
-    zones.persist(StorageLevel.MEMORY_AND_DISK)
+    .persist(StorageLevel.MEMORY_AND_DISK)
 
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
@@ -185,8 +252,7 @@ object Truss {
           val list = zone1 ::: zone2
           list.distinct
         })
-
-      edgeZonesCombined.persist(StorageLevel.MEMORY_AND_DISK)
+        .persist(StorageLevel.MEMORY_AND_DISK)
 
       //calculate interZoneCount
       if (edgeZonesCombined.isEmpty()) interZoneEdgeCounter = 0
@@ -212,28 +278,25 @@ object Truss {
       val verticesWithNewZones = zoneVertex.join(bestZonePerZone)
 
       zones = verticesWithNewZones.map(v => (v._2._1, v._2))
-      zones.persist(StorageLevel.MEMORY_AND_DISK)
+        .persist(StorageLevel.MEMORY_AND_DISK)
     }
 
     zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
   }
 
-  def getOuterTriangleVertices(combination:(Vertex, (Truss.Edge, Truss.Edge))): (Vertex, Vertex) ={
-    val innerVertex = combination._1
+  def getOuterTriangleVertices(combination:(Vertex, (Truss.Edge, Truss.Edge))): Edge ={
     val edge1 = combination._2._1
     val edge2 = combination._2._2
 
-    val outerVertex1:Vertex = if (edge1.vertex1.id != innerVertex.id) edge1.vertex1 else edge1.vertex2
-    val outerVertex2:Vertex = if (edge2.vertex1.id != innerVertex.id) edge2.vertex1 else edge2.vertex2
-
-    if (outerVertex1.id > outerVertex2.id)
-      (outerVertex1, outerVertex2)
-    else (outerVertex2, outerVertex1)
+    createEdge(edge1.vertex2, edge2.vertex2)
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    if (vert1.degree > vert2.degree) new Edge(vert1, vert2, true)
-    else new Edge(vert2, vert1, false)
+    if (vert1.degree > vert2.degree) new Edge(vert1, vert2)
+    else
+      if (vert1.degree == vert2.degree && vert1.id < vert2.id)
+        new Edge(vert1, vert2)
+      else new Edge(vert2, vert1)
   }
 
   def addDegreesToGraph(graph:RDD[Edge]): RDD[Edge] ={
@@ -243,11 +306,9 @@ object Truss {
     graph
       .keyBy(e => e.vertex1.id)
       .join(degree)
-      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, e._2._1.original)))
+      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2)))
       .join(degree)
-      .map(e => {if (e._2._1.original)
-          createEdge(e._2._1.vertex1, new Vertex(e._1, e._2._2))
-        else
+      .map(e => {
           createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)
         })
   }

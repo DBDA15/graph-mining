@@ -1,5 +1,7 @@
 package de.hpi.dbda.graph_mining
 
+import java.io.{File, PrintWriter}
+
 import de.hpi.dbda.graph_mining.Truss.Edge
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -9,14 +11,30 @@ import org.apache.spark.rdd.RDD
  */
 object MaximalTruss {
 
-  def maximumTruss(graph: RDD[Edge], context:SparkContext): Unit ={
+  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String, stringk:String): Unit ={
 
-    val k = 5
+    val outputFile = outputPath + "/maximalTruss/truss"
 
-    val result = recursiveTruss(5, 0 ,2, List(graph), context)
-    result.foreach{t =>
-      t.foreach(e => print(e + ", "))
-      println("")}
+    val k = stringk.toInt
+
+    val degreedGraph = Truss.addDegreesToGraph(graph)
+    val result = recursiveTruss(k, 0 ,2, List(degreedGraph), context)
+//    result.foreach{t =>
+//      t.foreach(e => print(e + ", "))
+//      println("")}
+
+   // result.foreach(t => t.saveAsTextFile(outputFile))
+
+    result.zipWithIndex.foreach { case (t, i) =>
+
+      val truss = t.collect()
+      val vertexSet = Clique.getVertexSet(truss)
+      val printWriter = new PrintWriter(new File(outputFile + i.toString))
+      vertexSet.foreach(a => {
+        printWriter.println(a)
+      })
+      printWriter.close()
+    }
   }
 
 
@@ -32,6 +50,7 @@ object MaximalTruss {
       val foundTrusses = graphs.flatMap{ graph =>
         val trusses = Truss.calculateTrusses(k-2, graph)
         val groupedEdgesPerTruss = trusses.groupByKey()
+
         val x = groupedEdgesPerTruss.collect()
           .map(e => context.parallelize(e._2.toSeq)).toList
         x
