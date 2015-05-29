@@ -49,7 +49,7 @@ object MaximalTruss {
       val foundTrusses = graphs.flatMap{ graph =>
         val trusses = Truss.calculateTrusses(k-2, graph)
         val groupedEdgesPerTruss = trusses.groupByKey()
-        groupedEdgesPerTruss.persist()
+
         val x = groupedEdgesPerTruss.collect()
           .map(e => context.parallelize(e._2.toSeq)).toList
         x

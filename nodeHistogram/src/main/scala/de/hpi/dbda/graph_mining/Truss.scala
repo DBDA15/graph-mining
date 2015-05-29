@@ -113,16 +113,12 @@ object Truss {
     val allEdges1 = graph.map(edge => (edge, List(edge)))
     val allEdges = allEdges1.persist(StorageLevel.MEMORY_AND_DISK)
 
-//    allEdges.saveAsTextFile("output/all/allEdges")
-
     val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
         .keyBy(edge => edge.vertex1)
 
-    //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
     val missedEdges = edgeCombinations
       .join(edgeCombinations)
 
-//    missedEdges.saveAsTextFile("output/all/missedEdges")
 
     val triads = missedEdges
       .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
@@ -132,16 +128,11 @@ object Truss {
 
     val t1 = triads.repartition(10)
 
-//    t.saveAsTextFile("output/all/t")
-//    val allEdges = graph.map(edge => ((edge.vertex1, edge.vertex2), List(edge)))
     val triangles = t1
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
-  //  missedEdges.unpersist()
-
     triangles
-//    filteredTriangles
   }
 
 
@@ -152,8 +143,6 @@ object Truss {
 
     val edgeCombinations = graph.filter(edge => edge.vertex1.degree > 1)
       .map{edge => (edge.vertex1, edge)}
-
-    //(vertex: int, ((v1_edge1, v2_edge1: int), (v1_edge2: int, v2_edge2: int))))
 
     val triads = edgeCombinations
       .groupByKey()
@@ -212,9 +201,11 @@ object Truss {
 
       val triangleCountPerEdge = singleEdges.reduceByKey((count1, count2) => count1 + count2)
 
-      graph = triangleCountPerEdge.filter(count => count._2 >= k).map(edgeCount => edgeCount._1)
+      graph = triangleCountPerEdge
+        .filter(count => count._2 >= k)
+        .map(edgeCount => edgeCount._1)
+        .persist(StorageLevel.MEMORY_AND_DISK)
 
-      graph.persist(StorageLevel.MEMORY_AND_DISK)
       graphCount = graph.count()
     }
 
@@ -222,7 +213,7 @@ object Truss {
 
     //convert into zone => edge mappings
     val vertexInZComponent = components.map(zoneVertex => (zoneVertex._2, zoneVertex._1))
-    vertexInZComponent.persist(StorageLevel.MEMORY_AND_DISK)
+          .persist(StorageLevel.MEMORY_AND_DISK)
     val edgePerVertex = graph.map(edge => (edge.vertex1, edge))
     val edgeInComponent = edgePerVertex
       .join(vertexInZComponent)
@@ -239,8 +230,7 @@ object Truss {
     //build zone file
     var zones = graph.flatMap(edge => List((edge.vertex1, (edge.vertex1,  edge.vertex1.id)), (edge.vertex2, ( edge.vertex2, edge.vertex2.id))))
     .reduceByKey((zone1, zone2) => zone1)
-
-    zones.persist(StorageLevel.MEMORY_AND_DISK)
+    .persist(StorageLevel.MEMORY_AND_DISK)
 
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
@@ -262,8 +252,7 @@ object Truss {
           val list = zone1 ::: zone2
           list.distinct
         })
-
-      edgeZonesCombined.persist(StorageLevel.MEMORY_AND_DISK)
+        .persist(StorageLevel.MEMORY_AND_DISK)
 
       //calculate interZoneCount
       if (edgeZonesCombined.isEmpty()) interZoneEdgeCounter = 0
@@ -289,7 +278,7 @@ object Truss {
       val verticesWithNewZones = zoneVertex.join(bestZonePerZone)
 
       zones = verticesWithNewZones.map(v => (v._2._1, v._2))
-      zones.persist(StorageLevel.MEMORY_AND_DISK)
+        .persist(StorageLevel.MEMORY_AND_DISK)
     }
 
     zones.map(vertexZone => (vertexZone._2._2, vertexZone._1))
