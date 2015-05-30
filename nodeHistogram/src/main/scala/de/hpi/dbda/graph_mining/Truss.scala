@@ -195,7 +195,7 @@ object Truss {
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 
-      val triangles = getTriangles(graph)
+      val triangles = getTrianglesNoSpark(graph)
 
       val singleEdges = triangles.flatMap(triangle => triangle.edges).map(edge => (edge, 1))
 
