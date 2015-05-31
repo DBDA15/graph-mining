@@ -63,13 +63,13 @@ object GraphMiningSpark extends App {
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("triangle"))
-      Truss.getTrianglesAndSave(context.textFile(inputPath, 5), outputPath, seperator)
+      Truss.getTrianglesAndSave(context.textFile(inputPath, 10), outputPath, seperator)
 
     if(mode.equals("triangleNoSpark"))
-      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, 5), outputPath, seperator)
+      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, 10), outputPath, seperator)
 
     if (mode.equals("truss"))
-      Truss.calcTrussesAndSave(2, context.textFile(inputPath, 5), outputPath, seperator)
+      Truss.calcTrussesAndSave(2, context.textFile(inputPath, 10), outputPath, seperator)
 
     if(mode.equals("maxtruss"))
       MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
