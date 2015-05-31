@@ -126,9 +126,9 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    val t1 = triads.repartition(10)
+//    val t1 = triads.repartition(10)
 
-    val triangles = t1
+    val triangles = triads
       .join(allEdges)  //join with single edges
       .map(triangle => Triangle(triangle._2._1 ::: triangle._2._2))
 
@@ -153,9 +153,9 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-    val triads1 = triads.repartition(10)
+//    val triads1 = triads.repartition(10)
 
-    val triadsAndSingleEdges = triads1.union(allEdges)
+    val triadsAndSingleEdges = triads.union(allEdges)
 
    //reduce2
     val triangles = triadsAndSingleEdges
