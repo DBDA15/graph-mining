@@ -292,7 +292,7 @@ object Truss {
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    if (vert1.degree > vert2.degree) new Edge(vert1, vert2)
+    if (vert1.degree < vert2.degree) new Edge(vert1, vert2)
     else
       if (vert1.degree == vert2.degree && vert1.id < vert2.id)
         new Edge(vert1, vert2)

@@ -48,7 +48,7 @@ object MaximalTruss {
     } else {
 
       val foundTrusses = graphs.flatMap{ graph =>
-        val trusses = Truss.calculateTrusses(k-2, graph)
+        val trusses = Truss.calculateTrusses(k-2, graph.filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1))
         val groupedEdgesPerTruss = trusses.groupByKey()
 
         val x = groupedEdgesPerTruss.collect()
