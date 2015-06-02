@@ -17,7 +17,7 @@ object MaximalTruss {
 
     val k = stringk.toInt
 
-    val degreedGraph = Truss.addDegreesToGraph(graph)
+    val degreedGraph = Truss.addDegreesToGraph(graph).distinct()
     val result = recursiveTruss(k, 0 ,2, List(degreedGraph), context)
 //    result.foreach{t =>
 //      t.foreach(e => print(e + ", "))
