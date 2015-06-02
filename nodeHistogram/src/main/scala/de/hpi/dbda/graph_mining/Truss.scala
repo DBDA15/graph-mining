@@ -204,7 +204,7 @@ object Truss {
       graph = triangleCountPerEdge
         .filter(count => count._2 >= k)
         .map(edgeCount => edgeCount._1)
-        .persist(StorageLevel.MEMORY_AND_DISK)
+        //.persist(StorageLevel.MEMORY_AND_DISK)
 
       graphCount = graph.count()
     }
