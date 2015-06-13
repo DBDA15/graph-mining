@@ -1,5 +1,6 @@
 package de.hpi.dbda.graph_mining
 
+import org.apache.flink.api.common.io.FileInputFormat
 import org.apache.flink.api.scala.ExecutionEnvironment
 
 /**
@@ -8,14 +9,19 @@ import org.apache.flink.api.scala.ExecutionEnvironment
 object GraphMiningFlink {
 
   def main(args: Array[String]) {
-    val inputFile:String = ""
+    val inputFile:String = "../trussMini.txt"
 
     // set up the execution environment
     val env = ExecutionEnvironment.getExecutionEnvironment
 
-    env.readFile('csv', inputFile)
+   val rawGraph =  env.readTextFile(inputFile)
+   val dataset = Truss.convertGraph(rawGraph, "\t")
 
-    // execute program
+  Truss.getTriangles(dataset)
+
+//dataset.print()
+
+    // execute program.
     env.execute("Flink Scala Graph Mining")
   }
 
