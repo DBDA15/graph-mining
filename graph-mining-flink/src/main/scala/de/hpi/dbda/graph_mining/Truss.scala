@@ -35,13 +35,11 @@ object Truss {
     else new Edge(vert2, vert1)
   }
 
-  def getTriangles(graph:DataSet[Edge]): Unit ={
+  def getTriangles(graph:DataSet[Edge]): DataSet[Triangle] ={
 
     //TODO filter after degree
     val filteredGraph = graph
 
-
-    //TODO integrate filter => filter(e => eedge1.vertex2.id < edge2.vertex2.id)
     val triads = filteredGraph.join(filteredGraph).where("vertex1").equalTo("vertex1")
       .filter(new FilterFunction[(Edge, Edge)] {
       override def filter(t: (Edge, Edge)): Boolean = {
@@ -54,19 +52,48 @@ object Truss {
 
     val allEdges = graph.map(edge => (edge, List(edge)))
 
-    val triangles = triads.join(allEdges).where(0).
-
-      equalTo(0) {
+    val triangles = triads.join(allEdges).where(0).equalTo(0) {
       (trianglePart1, trianglePart2) => Triangle(trianglePart2._2 ::: trianglePart1._2)
     }
 
     println(triangles.count)
     triangles.print()
 
+    triangles
+
   }
 
   def getOuterTriangleVertices(edge1:Edge, edge2:Edge): Edge ={
     createEdge(edge1.vertex2, edge2.vertex2)
+  }
+
+  def calculateTruss(k:Int, firstGraph:DataSet[Edge]): Unit ={
+
+    var graphOldCount:Long = 0
+    var graph = firstGraph
+    var graphCount = graph.count
+
+
+    //TODO implement with flink loop improvements
+    
+    while(graphCount != graphOldCount) {
+      graphOldCount = graphCount
+
+      val triangles = getTriangles(graph)
+
+      val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
+
+      val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
+        (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}
+
+      graph = triangleCountPerEdge
+        .filter(count => count._2 >= k)
+        .map(edgeCount => edgeCount._1)
+
+      graphCount = graph.count
+
+    }
+
   }
 
 }
