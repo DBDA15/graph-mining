@@ -17,7 +17,10 @@ object GraphMiningFlink {
    val rawGraph =  env.readTextFile(inputFile)
    val dataset = Truss.convertGraph(rawGraph, "\t")
 
-  Truss.getTriangles(dataset)
+    Truss.getTriangles(dataset)
+
+
+    Truss.calculateTruss(2, dataset)
 
 //dataset.print()
 

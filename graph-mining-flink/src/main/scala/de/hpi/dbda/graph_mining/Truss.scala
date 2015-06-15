@@ -3,6 +3,7 @@ package de.hpi.dbda.graph_mining
 import org.apache.flink.api.common.functions.FilterFunction
 import org.apache.flink.api.scala.DataSet
 import org.apache.flink.api.scala._
+import org.apache.flink.util.Collector
 
 import scala.concurrent.duration.durationToPair
 
@@ -94,6 +95,44 @@ object Truss {
 
     }
 
+    val verticesWithComponents = findRemainingComponents(graph)
+
+
+    verticesWithComponents.writeAsCsv("output/flink", "\n", " ")
+
   }
+
+  def findRemainingComponents(graph:DataSet[Edge]): DataSet[(Vertex, Int)] ={
+
+    val vertices = graph.flatMap(edge =>
+          List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id)))
+      .groupBy(0).reduce({(zone1, zone2) => zone1})
+
+    //TODO max iterations
+    val verticesWithComponents = vertices.iterateDelta(vertices, 100, Array(0)) {
+      (s, ws) =>
+
+        // apply the step logic: join with the edges
+        val allNeighbors = ws.join(graph).where(0).equalTo("vertex1") { (vertex, edge) =>
+          (edge.vertex2, vertex._2)
+        }
+
+        // select the minimum neighbor
+        val minNeighbors = allNeighbors.groupBy(0).min(1)
+
+        // update if the component of the candidate is smaller
+        val updatedComponents = minNeighbors.join(s).where(0).equalTo(0) {
+          (newVertex, oldVertex, out: Collector[(Vertex, Int)]) =>
+            if (newVertex._2 < oldVertex._2) out.collect(newVertex)
+        }
+
+        // delta and new workset are identical
+        (updatedComponents, updatedComponents)
+    }
+
+    verticesWithComponents
+
+  }
+
 
 }
