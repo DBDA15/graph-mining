@@ -132,6 +132,7 @@ object Truss {
         }
 
         // delta and new workset are identical
+        println("jdsjlkdsja")
         (updatedComponents, updatedComponents)
     }
 

@@ -36,7 +36,7 @@ object GraphMiningFlink {
       val triangles = Truss.getTriangles(dataset)
 
       val output = outputPath + "/triangle"
-      Path(output).deleteIfExists()
+     // Path(output).deleteIfExists()
       triangles.writeAsCsv(output,  "\n", " ")
     }
 
@@ -44,7 +44,7 @@ object GraphMiningFlink {
       val truss = Truss.calculateTruss(2, dataset)
 
       val output = outputPath + "/truss"
-      Path(output).deleteIfExists()
+      //Path(output).deleteIfExists()
       truss.writeAsCsv(output, "\n", " ")
     }
 
