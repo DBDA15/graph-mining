@@ -70,7 +70,7 @@ object Truss {
     createEdge(edge1.vertex2, edge2.vertex2)
   }
 
-  def calculateTruss(k:Int, firstGraph:DataSet[Edge]): Unit ={
+  def calculateTruss(k:Int, firstGraph:DataSet[Edge]): DataSet[(Int, Edge)]={
 
     var graphOldCount:Long = 0
     var graph = firstGraph
@@ -104,7 +104,7 @@ object Truss {
       (zone, edge) => (zone._2 , edge)
     }
 
-    edgeInComponent.print()//.writeAsCsv("output/flink", "\n", " ")
+    edgeInComponent
   }
 
   def findRemainingComponents(graph:DataSet[Edge]): DataSet[(Vertex, Int)] ={
