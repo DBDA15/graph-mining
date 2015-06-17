@@ -4,7 +4,6 @@ import java.io.{File, PrintWriter}
 
 import org.apache.flink.api.common.io.FileInputFormat
 import org.apache.flink.api.scala.ExecutionEnvironment
-import org.apache.flink.api.java.utils.ParameterTool
 
 /**
  * Created by rice on 08.06.15.
@@ -27,7 +26,7 @@ object GraphMiningFlink {
 
     // val parameter = ParameterTool.fromArgs(args);
 
-    val rawGraph =  env.readTextFile(inputFile)
+    val rawGraph =  env.readTextFile(inputPath)
     val dataset = Truss.convertGraph(rawGraph, seperator)
 
 
