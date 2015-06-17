@@ -5,6 +5,8 @@ import org.apache.flink.api.scala.DataSet
 import org.apache.flink.api.scala._
 import org.apache.flink.util.Collector
 
+
+
 import scala.concurrent.duration.durationToPair
 
 /**
@@ -102,8 +104,7 @@ object Truss {
       (zone, edge) => (zone._2 , edge)
     }
 
-    edgeInComponent.writeAsCsv("output/flink", "\n", " ")
-
+    edgeInComponent.print()//.writeAsCsv("output/flink", "\n", " ")
   }
 
   def findRemainingComponents(graph:DataSet[Edge]): DataSet[(Vertex, Int)] ={

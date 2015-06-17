@@ -87,6 +87,19 @@ under the License.
 			<artifactId>flink-clients</artifactId>
 			<version>0.9.0-milestone-1</version>
 		</dependency>
+		<!-- Core -->
+		<dependency>
+			<groupId>com.github.scala-incubator.io</groupId>
+			<artifactId>scala-io-core_2.11</artifactId>
+			<version>0.4.3</version>
+		</dependency>
+
+		<!-- File -->
+		<dependency>
+			<groupId>com.github.scala-incubator.io</groupId>
+			<artifactId>scala-io-file_2.11</artifactId>
+			<version>0.4.3</version>
+		</dependency>
 	</dependencies>
 
 	<!-- We use the maven-assembly plugin to create a fat jar that contains all dependencies

@@ -4,6 +4,7 @@ import java.io.{File, PrintWriter}
 
 import org.apache.flink.api.common.io.FileInputFormat
 import org.apache.flink.api.scala.ExecutionEnvironment
+import scalax.file.Path
 
 /**
  * Created by rice on 08.06.15.
