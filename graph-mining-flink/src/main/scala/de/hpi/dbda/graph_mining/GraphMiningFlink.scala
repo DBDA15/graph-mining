@@ -3,7 +3,8 @@ package de.hpi.dbda.graph_mining
 import java.io.{File, PrintWriter}
 
 import org.apache.flink.api.common.io.FileInputFormat
-import org.apache.flink.api.scala.ExecutionEnvironment
+import org.apache.flink.api.java.tuple.Tuple
+import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
 import scalax.file.Path
 
 /**
@@ -33,13 +34,18 @@ object GraphMiningFlink {
 
     if (mode.equals("triangle")) {
       val triangles = Truss.getTriangles(dataset)
-      triangles.writeAsCsv(outputPath + "/triangle",  "\n", " ")
+
+      val output = outputPath + "/triangle"
+      Path(output).deleteIfExists()
+      triangles.writeAsCsv(output,  "\n", " ")
     }
 
     if (mode.equals("truss")) {
       val truss = Truss.calculateTruss(2, dataset)
 
-      truss.writeAsCsv("output/truss", "\n", " ")
+      val output = outputPath + "/truss"
+      Path(output).deleteIfExists()
+      truss.writeAsCsv(output, "\n", " ")
     }
 
 //    if(mode.equals("maxtruss"))
@@ -49,5 +55,4 @@ object GraphMiningFlink {
     env.execute("Flink Scala Graph Mining")
 
   }
-
 }
