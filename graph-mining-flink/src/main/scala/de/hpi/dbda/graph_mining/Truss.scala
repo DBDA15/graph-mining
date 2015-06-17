@@ -98,8 +98,11 @@ object Truss {
 
     val verticesWithComponents = findRemainingComponents(graph)
 
+    val edgeInComponent = verticesWithComponents.join(graph).where(0).equalTo("vertex1") {
+      (zone, edge) => (zone._2 , edge)
+    }
 
-    verticesWithComponents.writeAsCsv("output/flink", "\n", " ")
+    edgeInComponent.writeAsCsv("output/flink", "\n", " ")
 
   }
 
