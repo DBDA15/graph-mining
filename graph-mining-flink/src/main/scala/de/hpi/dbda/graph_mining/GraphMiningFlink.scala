@@ -5,7 +5,7 @@ import java.io.{File, PrintWriter}
 import org.apache.flink.api.common.io.FileInputFormat
 import org.apache.flink.api.java.tuple.Tuple
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
-import scalax.file.Path
+import java.io.File
 
 /**
  * Created by rice on 08.06.15.
@@ -36,7 +36,8 @@ object GraphMiningFlink {
       val triangles = Truss.getTriangles(dataset)
 
       val output = outputPath + "/triangle"
-      Path(output).deleteIfExists()
+      val file = new File(output)
+      file.delete()
       triangles.writeAsCsv(output,  "\n", " ")
     }
 
@@ -44,7 +45,8 @@ object GraphMiningFlink {
       val truss = Truss.calculateTruss(2, dataset)
 
       val output = outputPath + "/truss"
-      Path(output).deleteIfExists()
+      val file = new File(output)
+      file.delete()
       truss.writeAsCsv(output, "\n", " ")
     }
 
