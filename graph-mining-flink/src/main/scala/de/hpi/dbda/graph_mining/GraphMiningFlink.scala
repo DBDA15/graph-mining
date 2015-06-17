@@ -30,11 +30,16 @@ object GraphMiningFlink {
     val dataset = Truss.convertGraph(rawGraph, seperator)
 
 
-    if (mode.equals("triangle"))
-      Truss.getTriangles(dataset)
+    if (mode.equals("triangle")) {
+      val triangles = Truss.getTriangles(dataset)
+      triangles.writeAsCsv(outputPath + "/triangle",  "\n", " ")
+    }
 
-    if (mode.equals("truss"))
-      Truss.calculateTruss(2, dataset)
+    if (mode.equals("truss")) {
+      val truss = Truss.calculateTruss(2, dataset)
+
+      truss.writeAsCsv("output/truss", "\n", " ")
+    }
 
 //    if(mode.equals("maxtruss"))
 //      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
