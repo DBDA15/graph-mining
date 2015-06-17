@@ -76,7 +76,8 @@ object Truss {
 
 
     //TODO implement with flink loop improvements
-    
+
+//    val graph = firstGraph.iterateDelta()
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 
