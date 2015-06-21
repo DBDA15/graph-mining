@@ -28,17 +28,16 @@ object GraphMiningFlink {
 
     // val parameter = ParameterTool.fromArgs(args);
 
-    val rawGraph =  env.readTextFile(inputPath)
-    val dataset = Truss.convertGraph(rawGraph, seperator)
+    val rawGraph = env.readTextFile(inputPath)
+    val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
 
 
     if (mode.equals("triangle")) {
-      val triangles = Truss.getTriangles(dataset)
+      val triangles = Truss.getTriangles(dataset, 1)
 
       val output = outputPath + "/triangle"
 
-      val file = new File(output)
-      file.delete()
+      deleteFolder(output)
 
       triangles.writeAsCsv(output,  "\n", " ")
     }
@@ -48,9 +47,11 @@ object GraphMiningFlink {
 
       val output = outputPath + "/truss"
 
-      val file = new File(output)
-      file.delete()
+      deleteFolder(output)
+
       truss.writeAsCsv(output, "\n", " ")
+
+      truss.print()
     }
 
 //    if(mode.equals("maxtruss"))
@@ -59,5 +60,14 @@ object GraphMiningFlink {
     // execute program.
     env.execute("Flink Scala Graph Mining")
 
+  }
+
+  def deleteFolder(folderPath:String) {
+    val folder = new File(folderPath)
+    if (folder.isDirectory()) {
+      for (c <- folder.listFiles())
+        deleteFolder(c.getAbsolutePath)
+    }
+    folder.delete()
   }
 }

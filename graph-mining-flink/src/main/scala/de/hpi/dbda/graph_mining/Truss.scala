@@ -38,10 +38,28 @@ object Truss {
     else new Edge(vert2, vert1)
   }
 
-  def getTriangles(graph:DataSet[Edge]): DataSet[Triangle] ={
+  def addDegrees(graph:DataSet[Edge]): DataSet[Edge] ={
+    val degrees = graph
+      .map{e => e.vertex1}
+      .union(graph.map(e => e.vertex2))   //TODO improve?
+      .groupBy(0)
+      .sum(1)
+      .map(v => (v.id, v) )
+
+    val degreedGraph = graph
+      .map(e => (e.vertex1.id, e.vertex2.id, e))
+      .join(degrees).where(0).equalTo(0)
+      .map(j => (j._1._2, new Edge(j._2._2, j._1._3.vertex2)))
+      .join(degrees).where(0).equalTo(0)
+      .map(j => createEdge(j._1._2.vertex1, j._2._2))
+
+    degreedGraph
+  }
+
+  def getTriangles(graph:DataSet[Edge], k:Int): DataSet[Triangle] ={
 
     //TODO filter after degree
-    val filteredGraph = graph
+    val filteredGraph = graph.filter(e => {e.vertex1.degree > k && e.vertex2.degree > k})
 
     val triads = filteredGraph.join(filteredGraph).where("vertex1").equalTo("vertex1")
       .filter(new FilterFunction[(Edge, Edge)] {
@@ -83,7 +101,7 @@ object Truss {
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 
-      val triangles = getTriangles(graph)
+      val triangles = getTriangles(graph, k)
 
       val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
 
