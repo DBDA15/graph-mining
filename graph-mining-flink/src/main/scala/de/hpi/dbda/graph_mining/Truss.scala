@@ -40,18 +40,19 @@ object Truss {
 
   def addDegrees(graph:DataSet[Edge]): DataSet[Edge] ={
     val degrees = graph
-      .map{e => e.vertex1}
-      .union(graph.map(e => e.vertex2))   //TODO improve?
+      .flatMap{e => List(e.vertex1, e.vertex2)}
       .groupBy(0)
       .sum(1)
       .map(v => (v.id, v) )
 
     val degreedGraph = graph
       .map(e => (e.vertex1.id, e.vertex2.id, e))
-      .join(degrees).where(0).equalTo(0)
-      .map(j => (j._1._2, new Edge(j._2._2, j._1._3.vertex2)))
-      .join(degrees).where(0).equalTo(0)
-      .map(j => createEdge(j._1._2.vertex1, j._2._2))
+      .join(degrees).where(0).equalTo(0) {
+      (e, v) => (e._2, new Edge(v._2, e._3.vertex2))
+    }
+      .join(degrees).where(0).equalTo(0) {
+      (e, v) => createEdge(e._2.vertex1, v._2)
+    }
 
     degreedGraph
   }
@@ -59,7 +60,7 @@ object Truss {
   def getTriangles(graph:DataSet[Edge], k:Int): DataSet[Triangle] ={
 
     //TODO filter after degree
-    val filteredGraph = graph.filter(e => {e.vertex1.degree > k && e.vertex2.degree > k})
+    val filteredGraph = graph.filter(e => {e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2})
 
     val triads = filteredGraph.join(filteredGraph).where("vertex1").equalTo("vertex1")
       .filter(new FilterFunction[(Edge, Edge)] {
@@ -109,7 +110,7 @@ object Truss {
         (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}
 
       graph = triangleCountPerEdge
-        .filter(count => count._2 >= k)
+        .filter(count => count._2 >= k-2)
         .map(edgeCount => edgeCount._1)
 
       graphCount = graph.count
@@ -135,6 +136,8 @@ object Truss {
     val verticesWithComponents = vertices.iterateDelta(vertices, 100, Array(0)) {
       (s, ws) =>
 
+        //TODO:in working set all changed
+
         // apply the step logic: join with the edges
         val allNeighbors = ws.join(graph).where(0).equalTo("vertex1") { (vertex, edge) =>
           (edge.vertex2, vertex._2)
@@ -157,6 +160,8 @@ object Truss {
     verticesWithComponents
 
   }
+
+  //selectivität nach trussid mit
 
 
 }
