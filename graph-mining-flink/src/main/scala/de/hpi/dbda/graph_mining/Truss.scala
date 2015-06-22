@@ -26,7 +26,7 @@ object Truss {
         val s = new Vertex(splitted(1).toInt, 1)
         createEdge(f, s)
       }
-    )
+    ).name("convert Graph")
     convertedGraph
   }
 
@@ -42,7 +42,7 @@ object Truss {
     val degrees = graph
       .flatMap{e => List(e.vertex1, e.vertex2)}
       .groupBy(0)
-      .sum(1)
+      .sum(1).name("calculate degrees")
       .map(v => (v.id, v) )
 
     val degreedGraph = graph
@@ -52,7 +52,7 @@ object Truss {
     }
       .join(degrees).where(0).equalTo(0) {
       (e, v) => createEdge(e._2.vertex1, v._2)
-    }
+    }.name("join Degrees")
 
     degreedGraph
   }
@@ -76,7 +76,7 @@ object Truss {
 
     val triangles = triads.join(allEdges).where(0).equalTo(0) {
       (trianglePart1, trianglePart2) => Triangle(trianglePart2._2 ::: trianglePart1._2)
-    }
+    }.name("calculate triangles")
 
     println(triangles.count)
     triangles.print()
@@ -107,11 +107,11 @@ object Truss {
       val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
-        (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}
+        (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
 
       graph = triangleCountPerEdge
         .filter(count => count._2 >= k-2)
-        .map(edgeCount => edgeCount._1)
+        .map(edgeCount => edgeCount._1).name("filter edges")
 
       graphCount = graph.count
 
@@ -121,7 +121,7 @@ object Truss {
 
     val edgeInComponent = verticesWithComponents.join(graph).where(0).equalTo("vertex1") {
       (zone, edge) => (zone._2 , edge)
-    }
+    }.name("edge in zone")
 
     edgeInComponent
   }
@@ -132,32 +132,41 @@ object Truss {
           List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id)))
       .groupBy(0).reduce({(zone1, zone2) => zone1})
 
+//    val ws = vertices
+//
+//    val s = vertices
+
     //TODO max iterations
     val verticesWithComponents = vertices.iterateDelta(vertices, 100, Array(0)) {
-      (s, ws) =>
-
-        //TODO:in working set all changed
-
+     (s, ws) =>
+//       println("looooooooop")
         // apply the step logic: join with the edges
         val allNeighbors = ws.join(graph).where(0).equalTo("vertex1") { (vertex, edge) =>
           (edge.vertex2, vertex._2)
-        }
+        }.name("findRemaingGraphComponent: join ws with graph")
 
         // select the minimum neighbor
-        val minNeighbors = allNeighbors.groupBy(0).min(1)
+        val minNeighbors = allNeighbors.groupBy(0).min(1).name("findRemaingGraphComponent: min neighbor")
 
         // update if the component of the candidate is smaller
         val updatedComponents = minNeighbors.join(s).where(0).equalTo(0) {
           (newVertex, oldVertex, out: Collector[(Vertex, Int)]) =>
             if (newVertex._2 < oldVertex._2) out.collect(newVertex)
-        }
+        }.name("findRemaingGraphComponent: get updated components")
+
+
+//    updatedComponents.print()
 
         // delta and new workset are identical
-        println("jdsjlkdsja")
+
         (updatedComponents, updatedComponents)
+
+//    updatedComponents.print()
     }
 
     verticesWithComponents
+
+//    vertices
 
   }
 

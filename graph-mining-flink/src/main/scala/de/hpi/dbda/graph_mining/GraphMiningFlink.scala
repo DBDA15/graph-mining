@@ -58,6 +58,7 @@ object GraphMiningFlink {
 //      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
 
     // execute program.
+   // println(env.getExecutionPlan())
     env.execute("Flink Scala Graph Mining")
 
   }
