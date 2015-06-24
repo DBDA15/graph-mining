@@ -130,11 +130,6 @@ object Truss {
 
     val vertices = graph.flatMap(edge =>
           List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id))).distinct
-    //  .groupBy(0).reduce({(zone1, zone2) => zone1})
-
-//    val ws = vertices
-//
-//    val s = vertices
 
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
@@ -160,9 +155,6 @@ object Truss {
             if (newVertex._2 < oldVertex._2) out.collect(newVertex)
         }.name("findRemaingGraphComponent: get updated components")
 
-
-//    updatedComponents.print()
-
         // delta and new workset are identical
         (updatedComponents, updatedComponents)
 
@@ -172,11 +164,6 @@ object Truss {
     verticesWithComponents
 
 
-//    vertices
-
   }
-
-  //selectivität nach trussid mit
-
 
 }
