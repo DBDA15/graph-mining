@@ -33,7 +33,7 @@ object GraphMiningFlink {
 
 
     if (mode.equals("triangle")) {
-      val triangles = Truss.getTriangles(dataset, 1)
+      val triangles = Truss.getTriangles(dataset, 3)
 
       val output = outputPath + "/triangle"
 
@@ -43,7 +43,7 @@ object GraphMiningFlink {
     }
 
     if (mode.equals("truss")) {
-      val truss = Truss.calculateTruss(2, dataset)
+      val truss = Truss.calculateTruss(4, dataset)
 
       val output = outputPath + "/truss"
 
@@ -58,6 +58,7 @@ object GraphMiningFlink {
 //      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
 
     // execute program.
+   // println(env.getExecutionPlan())
     env.execute("Flink Scala Graph Mining")
 
   }

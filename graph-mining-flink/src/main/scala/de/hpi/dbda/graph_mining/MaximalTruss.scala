@@ -17,7 +17,7 @@ object MaximalTruss {
 
     while (k != maxK && k != minK){
       graphs.flatMap{ graph =>
-        val trusses = Truss.calculateTruss(k-2, graph) //TODO filter .filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1)
+        val trusses = Truss.calculateTruss(k, graph) //TODO filter .filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1)
 //        val groupedEdgesPerTruss = trusses.groupBy(0).reduceGroup(env.fromElements{(iterator) => iterator.map(e => e._2).toList}))
 
 
