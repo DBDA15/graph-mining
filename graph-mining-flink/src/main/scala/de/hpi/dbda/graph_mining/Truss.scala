@@ -129,24 +129,30 @@ object Truss {
   def findRemainingComponents(graph:DataSet[Edge]): DataSet[(Vertex, Int)] ={
 
     val vertices = graph.flatMap(edge =>
-          List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id)))
-      .groupBy(0).reduce({(zone1, zone2) => zone1})
+          List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id))).distinct
+    //  .groupBy(0).reduce({(zone1, zone2) => zone1})
 
 //    val ws = vertices
 //
 //    val s = vertices
 
+    val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
+
     //TODO max iterations
     val verticesWithComponents = vertices.iterateDelta(vertices, 100, Array(0)) {
      (s, ws) =>
-//       println("looooooooop")
+
         // apply the step logic: join with the edges
-        val allNeighbors = ws.join(graph).where(0).equalTo("vertex1") { (vertex, edge) =>
-          (edge.vertex2, vertex._2)
+        val edgeZones = ws.join(graphMap1).where(0).equalTo(0) { (vertex, vertexEdge) =>
+          (vertexEdge._2, vertex._2)
         }.name("findRemaingGraphComponent: join ws with graph")
 
         // select the minimum neighbor
-        val minNeighbors = allNeighbors.groupBy(0).min(1).name("findRemaingGraphComponent: min neighbor")
+        val minEdgeZones = edgeZones.groupBy(0).min(1).name("findRemaingGraphComponent: min neighbor")
+
+        val allNeighbors = minEdgeZones.flatMap(edge => List((edge._1.vertex1,  edge._2), ( edge._1.vertex2, edge._2)))
+
+        val minNeighbors = allNeighbors.groupBy(0).min(1)
 
         // update if the component of the candidate is smaller
         val updatedComponents = minNeighbors.join(s).where(0).equalTo(0) {
@@ -158,13 +164,13 @@ object Truss {
 //    updatedComponents.print()
 
         // delta and new workset are identical
-
         (updatedComponents, updatedComponents)
 
 //    updatedComponents.print()
     }
 
     verticesWithComponents
+
 
 //    vertices
 
