@@ -100,8 +100,27 @@ object Truss {
 
 
     //TODO implement with flink loop improvements
+//
+//    val graph1 = firstGraph.iterateDelta(firstGraph, 10000, Array(0)){
+//      (s, ws) =>
+//
+//        val triangles = getTriangles(ws, k)
+//
+//        val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
+//
+//        val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
+//          (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
+//
+//        graph = triangleCountPerEdge
+//          .filter(count => count._2 >= k-2).name("filter edges")
+//          .map(edgeCount => edgeCount._1).name("map to edge")
+//
+//        (s, ws)
+//    }
 
-//    val graph = firstGraph.iterateDelta()
+
+
+
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 

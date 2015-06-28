@@ -8,7 +8,7 @@ import org.apache.flink.api.scala._
  */
 object MaximalTruss {
 
-  def maxTruss(graph: DataSet[Edge], stringk:String): Unit ={
+  def maxTruss(graph: DataSet[Edge], stringk:String): DataSet[Edge] ={
 
     var k = stringk.toInt
     var maxK = 0
@@ -49,7 +49,7 @@ object MaximalTruss {
 
     }
 
-    graphs.writeAsText("output/flink/maxTruss")
+    graphs
 
   }
 

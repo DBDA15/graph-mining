@@ -54,8 +54,14 @@ object GraphMiningFlink {
       truss.print()
     }
 
-    if(mode.equals("maxtruss"))
-      MaximalTruss.maxTruss(dataset, args(4))
+    if(mode.equals("maxtruss")) {
+      val trusses = MaximalTruss.maxTruss(dataset, args(4))
+
+      val output = outputPath + "/truss"
+      deleteFolder(output)
+
+      trusses.writeAsText(output)
+    }
 
     // execute program.
    // println(env.getExecutionPlan())
