@@ -14,8 +14,9 @@ import scala.concurrent.duration.durationToPair
  */
 
 case class Vertex(id: Int, degree:Int)
-case class Edge(vertex1:Vertex,vertex2:Vertex)
+case class Edge(vertex1:Vertex,vertex2:Vertex, var truss:Int)
 case class Triangle(edges:List[Edge])
+
 
 object Truss {
 
@@ -24,21 +25,23 @@ object Truss {
         val splitted = line.split(seperator)
         val f = new Vertex(splitted(0).toInt, 1)
         val s = new Vertex(splitted(1).toInt, 1)
-        createEdge(f, s)
+        createEdge(f, s, 1)
       }
     ).name("convert Graph")
     convertedGraph
   }
 
-  def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    if (vert1.degree < vert2.degree) new Edge(vert1, vert2)
+  def createEdge(vert1:Vertex, vert2:Vertex, truss:Int): Edge = {
+    if (vert1.degree < vert2.degree) new Edge(vert1, vert2, truss)
     else
     if (vert1.degree == vert2.degree && vert1.id < vert2.id)
-      new Edge(vert1, vert2)
-    else new Edge(vert2, vert1)
+      new Edge(vert1, vert2, truss)
+    else new Edge(vert2, vert1, truss)
   }
 
   def addDegrees(graph:DataSet[Edge]): DataSet[Edge] ={
+    val truss = 1
+
     val degrees = graph
       .flatMap{e => List(e.vertex1, e.vertex2)}
       .groupBy(0)
@@ -48,10 +51,10 @@ object Truss {
     val degreedGraph = graph
       .map(e => (e.vertex1.id, e.vertex2.id, e))
       .join(degrees).where(0).equalTo(0) {
-      (e, v) => (e._2, new Edge(v._2, e._3.vertex2))
+      (e, v) => (e._2, new Edge(v._2, e._3.vertex2, truss))
     }
       .join(degrees).where(0).equalTo(0) {
-      (e, v) => createEdge(e._2.vertex1, v._2)
+      (e, v) => createEdge(e._2.vertex1, v._2, truss)
     }.name("join Degrees")
 
     degreedGraph
@@ -86,7 +89,7 @@ object Truss {
   }
 
   def getOuterTriangleVertices(edge1:Edge, edge2:Edge): Edge ={
-    createEdge(edge1.vertex2, edge2.vertex2)
+    createEdge(edge1.vertex2, edge2.vertex2, edge1.truss)
   }
 
   def calculateTruss(k:Int, firstGraph:DataSet[Edge]): DataSet[(Int, Edge)]={
@@ -110,8 +113,8 @@ object Truss {
         (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
 
       graph = triangleCountPerEdge
-        .filter(count => count._2 >= k-2)
-        .map(edgeCount => edgeCount._1).name("filter edges")
+        .filter(count => count._2 >= k-2).name("filter edges")
+        .map(edgeCount => edgeCount._1).name("map to edge")
 
       graphCount = graph.count
 

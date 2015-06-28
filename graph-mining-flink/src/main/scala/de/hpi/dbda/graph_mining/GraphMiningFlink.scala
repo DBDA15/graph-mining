@@ -54,8 +54,8 @@ object GraphMiningFlink {
       truss.print()
     }
 
-//    if(mode.equals("maxtruss"))
-//      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
+    if(mode.equals("maxtruss"))
+      MaximalTruss.maxTruss(dataset, args(4))
 
     // execute program.
    // println(env.getExecutionPlan())
