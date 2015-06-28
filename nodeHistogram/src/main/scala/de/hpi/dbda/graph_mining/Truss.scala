@@ -8,7 +8,7 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(var vertex1:Vertex, var vertex2:Vertex){
+  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int){
 //    def replace(newEdge:Edge): Unit ={
 //      vertex1 = newEdge.vertex1
 //      vertex2 = newEdge.vertex2
@@ -292,11 +292,12 @@ object Truss {
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    if (vert1.degree < vert2.degree) new Edge(vert1, vert2)
+    val truss = 1
+    if (vert1.degree < vert2.degree) new Edge(vert1, vert2, truss)
     else
       if (vert1.degree == vert2.degree && vert1.id < vert2.id)
-        new Edge(vert1, vert2)
-      else new Edge(vert2, vert1)
+        new Edge(vert1, vert2, truss)
+      else new Edge(vert2, vert1, truss)
   }
 
   def addDegreesToGraph(graph:RDD[Edge]): RDD[Edge] ={
@@ -306,7 +307,7 @@ object Truss {
     graph
       .keyBy(e => e.vertex1.id)
       .join(degree)
-      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2)))
+      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, 1)))
       .join(degree)
       .map(e => {
           createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)

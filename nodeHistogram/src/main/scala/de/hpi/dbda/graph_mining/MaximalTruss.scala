@@ -18,23 +18,26 @@ object MaximalTruss {
     val k = stringk.toInt
 
     val degreedGraph = Truss.addDegreesToGraph(graph).distinct()
-    val result = recursiveTruss(k, 0 ,2, List(degreedGraph), context)
+//    val result = recursiveTruss(k, 0 ,2, List(degreedGraph), context)
+
+    val result = maxTruss(k,degreedGraph)
 //    result.foreach{t =>
 //      t.foreach(e => print(e + ", "))
 //      println("")}
 
+    result.saveAsTextFile(outputFile)
    // result.foreach(t => t.saveAsTextFile(outputFile))
 
-    result.zipWithIndex.foreach { case (t, i) =>
-
-      val truss = t.collect()
-      val vertexSet = Clique.getVertexSet(truss)
-      val printWriter = new PrintWriter(new File(outputFile + i.toString))
-      vertexSet.foreach(a => {
-        printWriter.println(a)
-      })
-      printWriter.close()
-    }
+//    result.zipWithIndex.foreach { case (t, i) =>
+//
+//      val truss = t.collect()
+//      val vertexSet = Clique.getVertexSet(truss)
+//      val printWriter = new PrintWriter(new File(outputFile + i.toString))
+//      vertexSet.foreach(a => {
+//        printWriter.println(a)
+//      })
+//      printWriter.close()
+//    }
   }
 
 
@@ -70,5 +73,54 @@ object MaximalTruss {
       }
     }
   }
+
+  def maxTruss(initialK:Int, graph:RDD[Truss.Edge]): RDD[Edge] = {
+    var graphs = graph
+    var maxK = 0
+    var minK = 2
+    var k = initialK
+
+    while (k != maxK && k != minK) {
+
+      println("k is " + k)
+      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k - 2 && e.vertex2.degree >= k - 2)
+      //      filteredGraph.print()
+
+      val trusses = Truss.calculateTrusses(k-2, filteredGraph)
+
+      trusses.saveAsTextFile("output/temp/")
+
+      val foundTrusses: RDD[Edge] = trusses.map { truss =>
+        truss._2.truss = truss._1
+        truss._2
+      }
+
+      if (foundTrusses.count == 0) {
+        val newK = minK + (k - minK) / 2
+        maxK = k
+        k = newK
+      } else {
+        if (maxK == 0) {
+          val newK = 2 * k
+          minK = k
+          k = newK
+        } else {
+          val newK = k + (maxK - k) / 2
+          minK = k
+          k = newK
+        }
+
+        graphs = foundTrusses
+      }
+
+    }
+
+    graphs
+
+
+    println("k is " + k)
+
+  }
+
 
 }
