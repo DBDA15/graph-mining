@@ -115,10 +115,10 @@ object MaximalTruss {
 
     }
 
+    println("k is " + k)
     graphs
 
 
-    println("k is " + k)
 
   }
 
