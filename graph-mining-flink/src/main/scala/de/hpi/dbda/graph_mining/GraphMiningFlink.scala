@@ -28,9 +28,15 @@ object GraphMiningFlink {
 
     // val parameter = ParameterTool.fromArgs(args);
 
+    val startTime = java.lang.System.currentTimeMillis()
+
     val rawGraph = env.readTextFile(inputPath)
+
+    val rawGraphTime = java.lang.System.currentTimeMillis() - startTime
+
     val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
 
+    val addDegreesTime = java.lang.System.currentTimeMillis() - startTime - rawGraphTime
 
     if (mode.equals("triangle")) {
       val triangles = Truss.getTriangles(dataset)
@@ -54,19 +60,28 @@ object GraphMiningFlink {
       truss.print()
     }
 
+    var maxTrussesTime = 0.toLong
+    var writeOutputTime = 0.toLong
+
     if(mode.equals("maxtruss")) {
       val trusses = MaximalTruss.maxTruss(dataset, args(4))
+
+      maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
       val output = outputPath + "/truss"
       deleteFolder(output)
 
       trusses.writeAsText(output)
+
+      writeOutputTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
     }
 
     // execute program.
    // println(env.getExecutionPlan())
     env.execute("Flink Scala Graph Mining")
 
+    val fullTime = java.lang.System.currentTimeMillis() - startTime
+    val temp = 1+1
   }
 
   def deleteFolder(folderPath:String) {

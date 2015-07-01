@@ -88,8 +88,6 @@ object MaximalTruss {
 
       val trusses = Truss.calculateTrusses(k-2, filteredGraph)
 
-      trusses.saveAsTextFile("output/temp/")
-
       val foundTrusses: RDD[Edge] = trusses.map { truss =>
         truss._2.truss = truss._1
         truss._2
