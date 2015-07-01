@@ -14,7 +14,7 @@ import scala.concurrent.duration.durationToPair
  */
 
 case class Vertex(id: Int, degree:Int)
-case class Edge(vertex1:Vertex,vertex2:Vertex, var truss:Int)
+case class Edge(vertex1:Vertex,vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = -1)
 case class Triangle(edges:List[Edge])
 
 
@@ -60,12 +60,9 @@ object Truss {
     degreedGraph
   }
 
-  def getTriangles(graph:DataSet[Edge], k:Int): DataSet[Triangle] ={
+  def getTriangles(graph:DataSet[Edge]): DataSet[Triangle] ={
 
-    //TODO filter after degree
-    val filteredGraph = graph.filter(e => {e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2})
-
-    val triads = filteredGraph.join(filteredGraph).where("vertex1").equalTo("vertex1")
+    val triads = graph.join(graph).where("vertex1").equalTo("vertex1")
       .filter(new FilterFunction[(Edge, Edge)] {
       override def filter(t: (Edge, Edge)): Boolean = {
         t._1.vertex2.id < t._2.vertex2.id
@@ -73,7 +70,6 @@ object Truss {
      })
       .map(t => (getOuterTriangleVertices(t._1, t._2), List(t._1, t._2))
       ).name("Calculate Triads")
-
 
     val allEdges = graph.map(edge => (edge, List(edge)))
 
@@ -85,55 +81,103 @@ object Truss {
     triangles.print()
 
     triangles
-
   }
 
   def getOuterTriangleVertices(edge1:Edge, edge2:Edge): Edge ={
     createEdge(edge1.vertex2, edge2.vertex2, edge1.truss)
   }
 
+
+
   def calculateTruss(k:Int, firstGraph:DataSet[Edge]): DataSet[(Int, Edge)]={
 
-    var graphOldCount:Long = 0
-    var graph = firstGraph
-    var graphCount = graph.count
-
-
-    //TODO implement with flink loop improvements
+//    val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2})
 //
-//    val graph1 = firstGraph.iterateDelta(firstGraph, 10000, Array(0)){
+//    var triangles = getTriangles(filteredGraph)
+//
+//    triangles.print()
+//
+//    val updatedGraph = filteredGraph.iterateDelta(filteredGraph, 10000, Array(0)){
 //      (s, ws) =>
 //
-//        val triangles = getTriangles(ws, k)
+//        val filteredTriangles = triangles.filter{triangle => (triangle.edges(0).triangleCount >= k-2 || triangle.edges(0).triangleCount == -1)  && (triangle.edges(1).triangleCount >= k-2 || triangle.edges(1).triangleCount == -1) && (triangle.edges(2).triangleCount >= k-2 || triangle.edges(2).triangleCount == -1 )}.name("filter removed triangles")
 //
-//        val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
+//        val singleEdges = filteredTriangles.flatMap(triangle => triangle.edges).map((_, 1))
 //
 //        val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
 //          (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
 //
-//        graph = triangleCountPerEdge
-//          .filter(count => count._2 >= k-2).name("filter edges")
-//          .map(edgeCount => edgeCount._1).name("map to edge")
+//        val edgesWithTriangleCount = triangleCountPerEdge.map{edgeInt =>
+//          edgeInt._1.triangleCount  = edgeInt._2
+//          edgeInt._1
+//        }
 //
-//        (s, ws)
+////        val newSolutionSet = edgesWithTriangleCount.filter(edge => edge.triangleCount >= k-2)
+//
+//        val removableEdges = edgesWithTriangleCount.filter(edge => edge.triangleCount < k-2)
+//
+//        triangles = filteredTriangles.join(edgesWithTriangleCount).where({triangle => (triangle.edges(0).vertex1, triangle.edges(0).vertex2)}).equalTo("vertex1", "vertex2"){
+//          (triangle, edge) =>
+//            triangle.edges(0).triangleCount = edge.triangleCount
+//            triangle
+//        }.join(edgesWithTriangleCount).where({triangle => (triangle.edges(1).vertex1, triangle.edges(1).vertex2)}).equalTo("vertex1", "vertex2"){
+//          (triangle, edge) =>
+//            triangle.edges(1).triangleCount = edge.triangleCount
+//            triangle
+//        }.join(edgesWithTriangleCount).where({triangle => (triangle.edges(2).vertex1, triangle.edges(2).vertex2)}).equalTo("vertex1", "vertex2"){
+//          (triangle, edge) =>
+//            triangle.edges(2).triangleCount = edge.triangleCount
+//            triangle
+//        }
+//
+//        //val newWs = triangles.filter{triangle => !(triangle.edges(0).triangleCount >= k-2 && triangle.edges(1).triangleCount >= k-2 && triangle.edges(2).triangleCount >= k-2)}.name("filter removed triangles end delta")
+//
+//        (edgesWithTriangleCount, removableEdges)
 //    }
+//
+//    updatedGraph.print()
+//
+//    val graph1 = updatedGraph.filter(edge => edge.triangleCount >= k-2)
 
 
+    var graph = firstGraph
+    var graphCount = graph.count()
+    var graphOldCount:Long = 0
 
+    var triangles = getTriangles(graph)
 
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 
-      val triangles = getTriangles(graph, k)
 
       val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
         (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
 
-      graph = triangleCountPerEdge
-        .filter(count => count._2 >= k-2).name("filter edges")
-        .map(edgeCount => edgeCount._1).name("map to edge")
+      graph = triangleCountPerEdge.map{edgeInt =>
+        edgeInt._1.triangleCount  = edgeInt._2
+        edgeInt._1
+      }.filter(edge => edge.triangleCount >= k-2)
+
+
+      triangles = triangles.join(graph).where({triangle => (triangle.edges(0).vertex1, triangle.edges(0).vertex2)}).equalTo("vertex1", "vertex2"){
+        (triangle, edge) =>
+          triangle.edges(0).triangleCount = edge.triangleCount
+          triangle
+      }
+
+      triangles = triangles.join(graph).where({triangle => (triangle.edges(1).vertex1, triangle.edges(1).vertex2)}).equalTo("vertex1", "vertex2"){
+        (triangle, edge) =>
+          triangle.edges(1).triangleCount = edge.triangleCount
+          triangle
+      }
+
+      triangles = triangles.join(graph).where({triangle => (triangle.edges(2).vertex1, triangle.edges(2).vertex2)}).equalTo("vertex1", "vertex2"){
+        (triangle, edge) =>
+          triangle.edges(2).triangleCount = edge.triangleCount
+          triangle
+      }
 
       graphCount = graph.count
 

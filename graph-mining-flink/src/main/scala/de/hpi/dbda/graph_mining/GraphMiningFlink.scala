@@ -33,7 +33,7 @@ object GraphMiningFlink {
 
 
     if (mode.equals("triangle")) {
-      val triangles = Truss.getTriangles(dataset, 3)
+      val triangles = Truss.getTriangles(dataset)
 
       val output = outputPath + "/triangle"
 
