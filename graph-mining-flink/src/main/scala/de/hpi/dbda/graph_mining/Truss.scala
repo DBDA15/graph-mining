@@ -15,7 +15,7 @@ import scala.concurrent.duration.durationToPair
 
 case class Vertex(id: Int, degree:Int)
 case class Edge(vertex1:Vertex,vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = -1)
-case class Triangle(edges:List[Edge])
+case class Triangle(edge1:Edge, edge2:Edge, edge3:Edge)
 
 
 object Truss {
@@ -68,13 +68,13 @@ object Truss {
         t._1.vertex2.id < t._2.vertex2.id
       }
      })
-      .map(t => (getOuterTriangleVertices(t._1, t._2), List(t._1, t._2))
+      .map(t => (getOuterTriangleVertices(t._1, t._2), t._1, t._2)
       ).name("Calculate Triads")
 
-    val allEdges = graph.map(edge => (edge, List(edge)))
+    val allEdges = graph.map(edge => (edge, edge))
 
     val triangles = triads.join(allEdges).where(0).equalTo(0) {
-      (trianglePart1, trianglePart2) => Triangle(trianglePart2._2 ::: trianglePart1._2)
+      (triadPart, edgePart) => Triangle(edgePart._2, triadPart._2, triadPart._3)
     }.name("calculate triangles")
 
     println(triangles.count)
@@ -150,7 +150,7 @@ object Truss {
       graphOldCount = graphCount
 
 
-      val singleEdges = triangles.flatMap(triangle => triangle.edges).map((_, 1))
+      val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
         (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
@@ -161,21 +161,21 @@ object Truss {
       }.filter(edge => edge.triangleCount >= k-2)
 
 
-      triangles = triangles.join(graph).where({triangle => (triangle.edges(0).vertex1, triangle.edges(0).vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
-          triangle.edges(0).triangleCount = edge.triangleCount
+          triangle.edge1.triangleCount = edge.triangleCount
           triangle
       }
 
-      triangles = triangles.join(graph).where({triangle => (triangle.edges(1).vertex1, triangle.edges(1).vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
-          triangle.edges(1).triangleCount = edge.triangleCount
+          triangle.edge2.triangleCount = edge.triangleCount
           triangle
       }
 
-      triangles = triangles.join(graph).where({triangle => (triangle.edges(2).vertex1, triangle.edges(2).vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
-          triangle.edges(2).triangleCount = edge.triangleCount
+          triangle.edge3.triangleCount = edge.triangleCount
           triangle
       }
 
