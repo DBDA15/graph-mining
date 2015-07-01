@@ -72,7 +72,7 @@ object GraphMiningSpark extends App {
       Truss.calcTrussesAndSave(2, context.textFile(inputPath, 10), outputPath, seperator)
 
     if(mode.equals("maxtruss"))
-      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath,args(4))
+      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath, args(4))
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)

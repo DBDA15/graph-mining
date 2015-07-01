@@ -8,7 +8,7 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int){
+  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int, var triangleCount:Int = 0){
 //    def replace(newEdge:Edge): Unit ={
 //      vertex1 = newEdge.vertex1
 //      vertex2 = newEdge.vertex2
@@ -192,22 +192,35 @@ object Truss {
 
     var graphCount = graph.count()
 
+    //TODO can we make this better? Only needed to remove the triangle counts for later
+    var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(10)
+
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 
-      val triangles = getTrianglesNoSpark(graph).repartition(10)
-
       val singleEdges = triangles.flatMap(triangle => triangle.edges).map(edge => (edge, 1))
 
-      val triangleCountPerEdge = singleEdges.reduceByKey((count1, count2) => count1 + count2)
+      graph = singleEdges.reduceByKey((count1, count2) => count1 + count2)
+        .map(t => {
+          t._1.triangleCount = t._2
+          t._1}
+        )
+        .filter(e => e.triangleCount >= k)
 
-      graph = triangleCountPerEdge
-        .filter(count => count._2 >= k)
-        .map(edgeCount => edgeCount._1)
-        //.persist(StorageLevel.MEMORY_AND_DISK)
+      val keyedGraph = graph.map(e => ((e.vertex1.id, e.vertex2.id), e)).persist(StorageLevel.MEMORY_AND_DISK)
+
+      triangles =
+        triangles.map(t => ((t.edges(0).vertex1.id, t.edges(0).vertex2.id), t))
+        .join(keyedGraph)
+        .map(t => ((t._2._1.edges(1).vertex1.id, t._2._1.edges(1).vertex2.id), new Triangle(List(t._2._2, t._2._1.edges(1), t._2._1.edges(2)))))
+        .join(keyedGraph)
+        .map(t => ((t._2._1.edges(2).vertex1.id, t._2._1.edges(2).vertex2.id), new Triangle(List(t._2._1.edges(0), t._2._2, t._2._1.edges(2)))))
+        .join(keyedGraph)
+        .map(t => new Triangle(List(t._2._1.edges(0), t._2._1.edges(1), t._2._2)))
 
       graphCount = graph.count()
     }
+
 
     val components = findRemainingGraphComponents(graph)
 
@@ -292,7 +305,7 @@ object Truss {
   }
 
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
-    val truss = 1
+    val truss = -1
     if (vert1.degree < vert2.degree) new Edge(vert1, vert2, truss)
     else
       if (vert1.degree == vert2.degree && vert1.id < vert2.id)
@@ -307,7 +320,7 @@ object Truss {
     graph
       .keyBy(e => e.vertex1.id)
       .join(degree)
-      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, 1)))
+      .map(e => (e._2._1.vertex2.id, new Edge(new Vertex(e._1, e._2._2), e._2._1.vertex2, -1)))
       .join(degree)
       .map(e => {
           createEdge(new Vertex(e._1, e._2._2), e._2._1.vertex1)
