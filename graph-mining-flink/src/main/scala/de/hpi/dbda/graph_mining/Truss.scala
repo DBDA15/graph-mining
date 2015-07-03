@@ -97,94 +97,92 @@ object Truss {
 
     var triangles = getTriangles(filteredGraph)
 
-    triangles.print()
 
-    val updatedGraph = filteredGraph.iterateDelta(filteredGraph, 10000, Array(0)){
-      (s, ws) =>
-
-        val filteredTriangles = triangles.filter{triangle =>
-          (triangle.edge1.triangleCount >= k-2 || triangle.edge1.triangleCount == -1)  && (triangle.edge2.triangleCount >= k-2 || triangle.edge2.triangleCount == -1) && (triangle.edge3.triangleCount >= k-2 || triangle.edge3.triangleCount == -1 )}.name("filter removed triangles")
-
-        val singleEdges = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
-
-        val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
-          (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
-
-        val edgesWithTriangleCount = triangleCountPerEdge.map{edgeInt =>
-          edgeInt._1.triangleCount  = edgeInt._2
-          edgeInt._1
-        }
-
-//        val newSolutionSet = edgesWithTriangleCount.filter(edge => edge.triangleCount >= k-2)
-
-        val removableEdges = edgesWithTriangleCount.filter(edge => edge.triangleCount < k-2)
-
-        triangles = filteredTriangles.join(edgesWithTriangleCount).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
-          (triangle, edge) =>
-            triangle.edge1.triangleCount = edge.triangleCount
-            triangle
-        }.join(edgesWithTriangleCount).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
-          (triangle, edge) =>
-            triangle.edge2.triangleCount = edge.triangleCount
-            triangle
-        }.join(edgesWithTriangleCount).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
-          (triangle, edge) =>
-            triangle.edge3.triangleCount = edge.triangleCount
-            triangle
-        }
-
-        //val newWs = triangles.filter{triangle => !(triangle.edges(0).triangleCount >= k-2 && triangle.edges(1).triangleCount >= k-2 && triangle.edges(2).triangleCount >= k-2)}.name("filter removed triangles end delta")
-
-        (edgesWithTriangleCount, removableEdges)
-    }
-
-    updatedGraph.print()
-
-    val graph1 = updatedGraph.filter(edge => edge.triangleCount >= k-2)
-
+//    val updatedGraph = triangles.iterateDelta(filteredGraph, 10000, Array(0)){
+//      (s, ws) =>
 //
-//    var graph = firstGraph
-//    var graphCount = graph.count()
-//    var graphOldCount:Long = 0
+//        val filteredTriangles = s.filter{triangle =>
+//          (triangle.edge1.triangleCount >= k-2 || triangle.edge1.triangleCount == -1)  && (triangle.edge2.triangleCount >= k-2 || triangle.edge2.triangleCount == -1) && (triangle.edge3.triangleCount >= k-2 || triangle.edge3.triangleCount == -1 )}.name("filter removed triangles")
 //
-//    var triangles = getTriangles(graph)
+//        val singleEdges = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
 //
-//    while(graphCount != graphOldCount) {
-//      graphOldCount = graphCount
+//        val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
+//          (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
 //
+//        val edgesWithTriangleCount = triangleCountPerEdge.map{edgeInt =>
+//          edgeInt._1.triangleCount  = edgeInt._2
+//          edgeInt._1
+//        }
 //
-//      val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
+////        val newSolutionSet = edgesWithTriangleCount.filter(edge => edge.triangleCount >= k-2)
 //
-//      val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
-//        (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
+//        val removableEdges = edgesWithTriangleCount.filter(edge => edge.triangleCount < k-2)
 //
-//      graph = triangleCountPerEdge.map{edgeInt =>
-//        edgeInt._1.triangleCount  = edgeInt._2
-//        edgeInt._1
-//      }.filter(edge => edge.triangleCount >= k-2)
+//        val changedTriangles = filteredTriangles.join(edgesWithTriangleCount).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
+//          (triangle, edge) =>
+//            triangle.edge1.triangleCount = edge.triangleCount
+//            triangle
+//        }.join(edgesWithTriangleCount).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
+//          (triangle, edge) =>
+//            triangle.edge2.triangleCount = edge.triangleCount
+//            triangle
+//        }.join(edgesWithTriangleCount).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
+//          (triangle, edge) =>
+//            triangle.edge3.triangleCount = edge.triangleCount
+//            triangle
+//        }
 //
+//        //val newWs = triangles.filter{triangle => !(triangle.edges(0).triangleCount >= k-2 && triangle.edges(1).triangleCount >= k-2 && triangle.edges(2).triangleCount >= k-2)}.name("filter removed triangles end delta")
 //
-//      triangles = triangles.join(graph).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
-//        (triangle, edge) =>
-//          triangle.edge1.triangleCount = edge.triangleCount
-//          triangle
-//      }
-//
-//      triangles = triangles.join(graph).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
-//        (triangle, edge) =>
-//          triangle.edge2.triangleCount = edge.triangleCount
-//          triangle
-//      }
-//
-//      triangles = triangles.join(graph).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
-//        (triangle, edge) =>
-//          triangle.edge3.triangleCount = edge.triangleCount
-//          triangle
-//      }
-//
-//      graphCount = graph.count
-//
+//        (changedTriangles, removableEdges)
 //    }
+//
+//    updatedGraph.print()
+//
+//    val filteredTriangles = triangles.filter{triangle =>
+//      (triangle.edge1.triangleCount >= k-2)  && (triangle.edge2.triangleCount >= k-2) && (triangle.edge3.triangleCount >= k-2)}.name("filter removed triangles")
+//
+//    graph = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3))
+//
+    var graphCount = graph.count()
+    var graphOldCount:Long = 0
+
+    while(graphCount != graphOldCount) {
+      graphOldCount = graphCount
+
+
+      val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
+
+      val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
+        (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
+
+      graph = triangleCountPerEdge.map{edgeInt =>
+        edgeInt._1.triangleCount  = edgeInt._2
+        edgeInt._1
+      }.filter(edge => edge.triangleCount >= k-2)
+
+
+      triangles = triangles.join(graph).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
+        (triangle, edge) =>
+          triangle.edge1.triangleCount = edge.triangleCount
+          triangle
+      }
+
+      triangles = triangles.join(graph).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
+        (triangle, edge) =>
+          triangle.edge2.triangleCount = edge.triangleCount
+          triangle
+      }
+
+      triangles = triangles.join(graph).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
+        (triangle, edge) =>
+          triangle.edge3.triangleCount = edge.triangleCount
+          triangle
+      }
+
+      graphCount = graph.count
+
+    }
 
     val verticesWithComponents = findRemainingComponents(graph)
 

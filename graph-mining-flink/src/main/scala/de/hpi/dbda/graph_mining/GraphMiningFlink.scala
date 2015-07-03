@@ -78,10 +78,10 @@ object GraphMiningFlink {
 
     // execute program.
    // println(env.getExecutionPlan())
-    env.execute("Flink Scala Graph Mining")
-
-    val fullTime = java.lang.System.currentTimeMillis() - startTime
-    val temp = 1+1
+    //env.execute("Flink Scala Graph Mining")
+//
+//    val fullTime = java.lang.System.currentTimeMillis() - startTime
+//    val temp = 1+1
   }
 
   def deleteFolder(folderPath:String) {
