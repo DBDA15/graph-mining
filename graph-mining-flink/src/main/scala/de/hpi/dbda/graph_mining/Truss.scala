@@ -4,6 +4,7 @@ import org.apache.flink.api.common.functions.FilterFunction
 import org.apache.flink.api.scala.DataSet
 import org.apache.flink.api.scala._
 import org.apache.flink.util.Collector
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint
 
 
 
@@ -50,10 +51,10 @@ object Truss {
 
     val degreedGraph = graph
       .map(e => (e.vertex1.id, e.vertex2.id, e))
-      .join(degrees).where(0).equalTo(0) {
+      .join(degrees, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
       (e, v) => (e._2, new Edge(v._2, e._3.vertex2, truss))
     }
-      .join(degrees).where(0).equalTo(0) {
+      .join(degrees, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
       (e, v) => createEdge(e._2.vertex1, v._2, truss)
     }.name("join Degrees")
 
@@ -73,7 +74,7 @@ object Truss {
 
     val allEdges = graph.map(edge => (edge, edge))
 
-    val triangles = triads.join(allEdges).where(0).equalTo(0) {
+    val triangles = triads.join(allEdges, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo(0) {
       (triadPart, edgePart) => Triangle(edgePart._2, triadPart._2, triadPart._3)
     }.name("calculate triangles")
 
@@ -162,19 +163,19 @@ object Truss {
       }.filter(edge => edge.triangleCount >= k-2)
 
 
-      triangles = triangles.join(graph).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph, JoinHint.BROADCAST_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge1.triangleCount = edge.triangleCount
           triangle
       }
 
-      triangles = triangles.join(graph).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph, JoinHint.BROADCAST_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge2.triangleCount = edge.triangleCount
           triangle
       }
 
-      triangles = triangles.join(graph).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph, JoinHint.BROADCAST_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge3.triangleCount = edge.triangleCount
           triangle
@@ -186,7 +187,7 @@ object Truss {
 
     val verticesWithComponents = findRemainingComponents(graph)
 
-    val edgeInComponent = verticesWithComponents.join(graph).where(0).equalTo("vertex1") {
+    val edgeInComponent = verticesWithComponents.join(graph, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo("vertex1") {
       (zone, edge) => (zone._2 , edge)
     }.name("edge in zone")
 
@@ -201,11 +202,11 @@ object Truss {
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
     //TODO max iterations
-    val verticesWithComponents = vertices.iterateDelta(vertices, 100, Array(0)) {
+    val verticesWithComponents = vertices.iterateDelta(vertices, 10000, Array(0)) {
      (s, ws) =>
 
         // apply the step logic: join with the edges
-        val edgeZones = ws.join(graphMap1).where(0).equalTo(0) { (vertex, vertexEdge) =>
+        val edgeZones = ws.join(graphMap1, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo(0) { (vertex, vertexEdge) =>
           (vertexEdge._2, vertex._2)
         }.name("findRemaingGraphComponent: join ws with graph")
 
@@ -217,7 +218,7 @@ object Truss {
         val minNeighbors = allNeighbors.groupBy(0).min(1)
 
         // update if the component of the candidate is smaller
-        val updatedComponents = minNeighbors.join(s).where(0).equalTo(0) {
+        val updatedComponents = minNeighbors.join(s, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
           (newVertex, oldVertex, out: Collector[(Vertex, Int)]) =>
             if (newVertex._2 < oldVertex._2) out.collect(newVertex)
         }.name("findRemaingGraphComponent: get updated components")
@@ -244,9 +245,9 @@ object Truss {
       (s, ws) =>
 
         // apply the step logic: join with the edges
-        val allNeighbors = ws.join(graph).where(0).equalTo("vertex1")
+        val allNeighbors = ws.join(graph, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo("vertex1")
         {(vertex, edge) => (edge.vertex2, vertex._2)}
-          .union(ws.join(graph).where(0).equalTo("vertex2")
+          .union(ws.join(graph, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo("vertex2")
         {(vertex, edge) => (edge.vertex1, vertex._2)})
 
 
