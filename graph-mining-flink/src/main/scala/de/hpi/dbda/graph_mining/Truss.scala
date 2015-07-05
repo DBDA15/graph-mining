@@ -51,7 +51,7 @@ object Truss {
 
     val degreedGraph = graph
       .map(e => (e.vertex1.id, e.vertex2.id, e))
-      .join(degrees, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
+      .join(degrees, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) { //Repartition
       (e, v) => (e._2, new Edge(v._2, e._3.vertex2, truss))
     }
       .join(degrees, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
@@ -163,19 +163,19 @@ object Truss {
       }.filter(edge => edge.triangleCount >= k-2)
 
 
-      triangles = triangles.join(graph, JoinHint.BROADCAST_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge1.triangleCount = edge.triangleCount
           triangle
       }
 
-      triangles = triangles.join(graph, JoinHint.BROADCAST_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge2.triangleCount = edge.triangleCount
           triangle
       }
 
-      triangles = triangles.join(graph, JoinHint.BROADCAST_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
+      triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge3.triangleCount = edge.triangleCount
           triangle
@@ -187,7 +187,7 @@ object Truss {
 
     val verticesWithComponents = findRemainingComponents(graph)
 
-    val edgeInComponent = verticesWithComponents.join(graph, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo("vertex1") {
+    val edgeInComponent = verticesWithComponents.join(graph, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo("vertex1") {
       (zone, edge) => (zone._2 , edge)
     }.name("edge in zone")
 
@@ -245,9 +245,9 @@ object Truss {
       (s, ws) =>
 
         // apply the step logic: join with the edges
-        val allNeighbors = ws.join(graph, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo("vertex1")
+        val allNeighbors = ws.join(graph, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo("vertex1")
         {(vertex, edge) => (edge.vertex2, vertex._2)}
-          .union(ws.join(graph, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo("vertex2")
+          .union(ws.join(graph, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo("vertex2")
         {(vertex, edge) => (edge.vertex1, vertex._2)})
 
 
