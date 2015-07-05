@@ -23,8 +23,15 @@ object GraphMiningFlink {
     if (args.length > 3) {
       seperator = args(3)
     }
+
+    val host = "tenemhead2"
+    val port = 6123
+    val jars = "target/graph-mining-flink-1.0-SNAPSHOT.jar"
+
+    val env = ExecutionEnvironment.createRemoteEnvironment(host, port, jars);
+
     // set up the execution environment
-    val env = ExecutionEnvironment.getExecutionEnvironment
+//    val env = ExecutionEnvironment.getExecutionEnvironment
 
     // val parameter = ParameterTool.fromArgs(args);
 
@@ -68,7 +75,7 @@ object GraphMiningFlink {
 
       maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
-      val output = outputPath + "/truss"
+      val output = outputPath + "/maxtruss"
       deleteFolder(output)
 
       trusses.writeAsText(output)
@@ -77,8 +84,8 @@ object GraphMiningFlink {
     }
 
     // execute program.
-   // println(env.getExecutionPlan())
-    //env.execute("Flink Scala Graph Mining")
+//    println(env.getExecutionPlan())
+//    env.getExecutionPlan() //execute("Flink Scala Graph Mining")
 //
 //    val fullTime = java.lang.System.currentTimeMillis() - startTime
 //    val temp = 1+1
