@@ -63,16 +63,16 @@ object Truss {
 
   def getTriangles(graph:DataSet[Edge]): DataSet[Triangle] ={
 
-    val triads = graph.join(graph).where("vertex1").equalTo("vertex1")
+    val triads = graph.join(graph).where("vertex1").equalTo("vertex1").name("create triads")
       .filter(new FilterFunction[(Edge, Edge)] {
       override def filter(t: (Edge, Edge)): Boolean = {
         t._1.vertex2.id < t._2.vertex2.id
       }
-     })
+     }).name("filter duplicated triads")
       .map(t => (getOuterTriangleVertices(t._1, t._2), t._1, t._2)
-      ).name("Calculate Triads")
+      ).name("map Triads")
 
-    val allEdges = graph.map(edge => (edge, edge))
+    val allEdges = graph.map(edge => (edge, edge)).name("triangleCalculation: map singlge edges")
 
     val triangles = triads.join(allEdges, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo(0) {
       (triadPart, edgePart) => Triangle(edgePart._2, triadPart._2, triadPart._3)
@@ -91,7 +91,7 @@ object Truss {
 
     var graph = firstGraph
 
-    val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2})
+    val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2}).name("filter too small nodes")
 
     var triangles = getTriangles(filteredGraph)
 
@@ -149,7 +149,7 @@ object Truss {
       graphOldCount = graphCount
 
 
-      val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
+      val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1)).name("prepare triangle count per edge")
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
         (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
@@ -157,26 +157,27 @@ object Truss {
       graph = triangleCountPerEdge.map{edgeInt =>
         edgeInt._1.triangleCount  = edgeInt._2
         edgeInt._1
-      }.filter(edge => edge.triangleCount >= k-2)
+      }.name("give edge triangle count")
+        .filter(edge => edge.triangleCount >= k-2).name("filter edge with too small triangleCount")
 
 
       triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge1.triangleCount = edge.triangleCount
           triangle
-      }
+      }.name("first triangle edge join")
 
       triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge2.triangleCount = edge.triangleCount
           triangle
-      }
+      }.name("second triangle edge join")
 
       triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge3.triangleCount = edge.triangleCount
           triangle
-      }
+      }.name("third triangle edge join")
 
       graphCount = graph.count
 
@@ -194,9 +195,9 @@ object Truss {
   def findRemainingComponents(graph:DataSet[Edge]): DataSet[(Vertex, Int)] ={
 
     val vertices = graph.flatMap(edge =>
-          List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id))).distinct
+          List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id))).distinct.name("vertices map")
 
-    val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
+    val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge))).name("name edge to vertices")
 
     //TODO max iterations
     val verticesWithComponents = vertices.iterateDelta(vertices, 1000, Array(0)) {

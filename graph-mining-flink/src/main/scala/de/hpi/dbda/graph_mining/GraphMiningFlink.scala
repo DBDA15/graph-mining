@@ -6,6 +6,7 @@ import org.apache.flink.api.common.io.FileInputFormat
 import org.apache.flink.api.java.tuple.Tuple
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
 import java.io.File
+import org.apache.log4j.{Level, Logger}
 
 /**
  * Created by rice on 08.06.15.
@@ -13,6 +14,11 @@ import java.io.File
 object GraphMiningFlink {
 
   def main(args: Array[String]) {
+//
+    val level = Level.WARN
+    Logger.getLogger("org").setLevel(level)
+    Logger.getLogger("akka").setLevel(level)
+
 
     val mode = args(0)
     val inputPath = args(1)
@@ -80,6 +86,7 @@ object GraphMiningFlink {
       deleteFolder(output)
 
       trusses.writeAsText(output)
+      trusses.print()
 
       writeOutputTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
     }
@@ -90,6 +97,10 @@ object GraphMiningFlink {
 //
 //    val fullTime = java.lang.System.currentTimeMillis() - startTime
 //    val temp = 1+1
+    println("############## overall used time = " + writeOutputTime + "#######################")
+    println("############## add Degrees time = " + addDegreesTime + "#########################")
+    println("############## raw Graph reading time = " + rawGraphTime + "######################")
+
   }
 
   def deleteFolder(folderPath:String) {

@@ -110,6 +110,21 @@ under the License.
 			<artifactId>scala-io-file_2.11</artifactId>
 			<version>0.4.3</version>
 		</dependency>
+
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.6.4</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.6.4</version>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
 	<!-- We use the maven-assembly plugin to create a fat jar that contains all dependencies

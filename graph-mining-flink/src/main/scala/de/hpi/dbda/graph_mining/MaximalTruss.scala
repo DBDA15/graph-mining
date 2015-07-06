@@ -18,7 +18,7 @@ object MaximalTruss {
 
     while (k != maxK && k != minK){
 
-      print ("k is " + k)
+      print ("############################ k is " + k +" #################################")
       val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
 //      filteredGraph.print()
 
@@ -29,7 +29,9 @@ object MaximalTruss {
           truss._2
         }
 
-      if (foundTrusses.count == 0){
+      val trussCount = foundTrusses.count
+
+      if ( trussCount == 0){
         val newK = minK + (k-minK)/2
         maxK = k
         k = newK
