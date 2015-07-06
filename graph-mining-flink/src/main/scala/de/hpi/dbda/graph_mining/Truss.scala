@@ -78,9 +78,6 @@ object Truss {
       (triadPart, edgePart) => Triangle(edgePart._2, triadPart._2, triadPart._3)
     }.name("calculate triangles")
 
-    println(triangles.count)
-    triangles.print()
-
     triangles
   }
 
@@ -202,7 +199,7 @@ object Truss {
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge)))
 
     //TODO max iterations
-    val verticesWithComponents = vertices.iterateDelta(vertices, 10000, Array(0)) {
+    val verticesWithComponents = vertices.iterateDelta(vertices, 1000, Array(0)) {
      (s, ws) =>
 
         // apply the step logic: join with the edges
