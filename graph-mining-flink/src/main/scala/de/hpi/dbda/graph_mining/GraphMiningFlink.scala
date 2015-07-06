@@ -84,6 +84,7 @@ object GraphMiningFlink {
 
     if(mode.equals("maxtruss")) {
       val trusses = MaximalTruss.maxTruss(dataset, args(4))
+//      val trusses = MaximalTruss.maxTruss1(dataset, args(4), env)
 
       maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
@@ -104,9 +105,9 @@ object GraphMiningFlink {
 
 //    val fullTime = java.lang.System.currentTimeMillis() - startTime
 //    val temp = 1+1
-    println("############## overall used time = " + diffTime + "#######################")
-    println("############## add Degrees time = " + addDegreesTime + "#########################")
-    println("############## raw Graph reading time = " + rawGraphTime + "######################")
+    println("############## overall used time = " + diffTime + " #######################")
+    println("############## add Degrees time = " + addDegreesTime + " #########################")
+    println("############## raw Graph reading time = " + rawGraphTime + " ######################")
 
   }
 
