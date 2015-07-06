@@ -94,11 +94,14 @@ object GraphMiningFlink {
 
     // execute program.
 //    println(env.getExecutionPlan())
-//    env.getExecutionPlan() //execute("Flink Scala Graph Mining")
-//
+    env.execute("Flink Scala Graph Mining")
+
+    val endTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
+    val diffTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
+
 //    val fullTime = java.lang.System.currentTimeMillis() - startTime
 //    val temp = 1+1
-    println("############## overall used time = " + writeOutputTime + "#######################")
+    println("############## overall used time = " + diffTime + "#######################")
     println("############## add Degrees time = " + addDegreesTime + "#########################")
     println("############## raw Graph reading time = " + rawGraphTime + "######################")
 
