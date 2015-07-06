@@ -67,7 +67,7 @@ object GraphMiningFlink {
     }
 
     if (mode.equals("truss")) {
-      val truss = Truss.calculateTruss(4, dataset)
+      val truss = Truss.calculateTruss(args(4).toInt, dataset)
 
       maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
