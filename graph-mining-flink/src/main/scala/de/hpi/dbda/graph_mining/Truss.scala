@@ -89,6 +89,8 @@ object Truss {
 
   def calculateTruss(k:Int, firstGraph:DataSet[Edge]): DataSet[(Int, Edge)]={
 
+
+    //iterateWithTermination
     var graph = firstGraph
 
     val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2}).name("filter too small nodes")

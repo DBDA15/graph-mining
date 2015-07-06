@@ -55,4 +55,45 @@ object MaximalTruss {
 
   }
 
+
+  def maxTrussIterative(graph: DataSet[Edge], stringk:String, executionEnvironment: ExecutionEnvironment): DataSet[Edge] ={
+
+    var k = stringk.toInt
+    var maxK = 0
+    var minK = 2
+
+    var graphs = graph
+
+    val iterations = executionEnvironment.fromElements(0 until 100)
+
+    iterations.iterateWithTermination(100)({dt => dt
+
+    })
+
+       print ("############################ k is " + k +" #################################")
+      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
+      //      filteredGraph.print()
+
+      val trusses = Truss.calculateTruss(k, filteredGraph)
+
+      val foundTrusses:DataSet[Edge] = trusses.map{truss =>
+        truss._2.truss = truss._1
+        truss._2
+      }
+
+      val trussCount = foundTrusses.count
+
+
+
+
+    graphs
+
+  }
+
+
+
+
+
+
+
 }

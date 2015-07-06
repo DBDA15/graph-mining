@@ -15,9 +15,9 @@ object GraphMiningFlink {
 
   def main(args: Array[String]) {
 //
-    val level = Level.WARN
-    Logger.getLogger("org").setLevel(level)
-    Logger.getLogger("akka").setLevel(level)
+//    val level = Level.WARN
+//    Logger.getLogger("org").setLevel(level)
+//    Logger.getLogger("akka").setLevel(level)
 
 
     val mode = args(0)
@@ -30,15 +30,15 @@ object GraphMiningFlink {
       seperator = args(3)
     }
 
-    val host = "tenemhead2"
-    val port = 6123
-    val jars = "target/graph-mining-flink-1.0-SNAPSHOT.jar"
-    val parallelism = 10
-
-    val env = ExecutionEnvironment.createRemoteEnvironment(host, port, parallelism, jars);
+//    val host = "tenemhead2"
+//    val port = 6123
+//    val jars = "target/graph-mining-flink-1.0-SNAPSHOT.jar"
+//    val parallelism = 10
+//
+//    val env = ExecutionEnvironment.createRemoteEnvironment(host, port, parallelism, jars);
 
     // set up the execution environment
-//    val env = ExecutionEnvironment.getExecutionEnvironment
+    val env = ExecutionEnvironment.getExecutionEnvironment
 
     // val parameter = ParameterTool.fromArgs(args);
 
@@ -51,6 +51,10 @@ object GraphMiningFlink {
     val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
 
     val addDegreesTime = java.lang.System.currentTimeMillis() - startTime - rawGraphTime
+
+
+    var maxTrussesTime = 0.toLong
+    var writeOutputTime = 0.toLong
 
     if (mode.equals("triangle")) {
       val triangles = Truss.getTriangles(dataset)
@@ -65,17 +69,15 @@ object GraphMiningFlink {
     if (mode.equals("truss")) {
       val truss = Truss.calculateTruss(4, dataset)
 
+      maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
+
       val output = outputPath + "/truss"
 
       deleteFolder(output)
 
       truss.writeAsCsv(output, "\n", " ")
-
-      truss.print()
     }
 
-    var maxTrussesTime = 0.toLong
-    var writeOutputTime = 0.toLong
 
     if(mode.equals("maxtruss")) {
       val trusses = MaximalTruss.maxTruss(dataset, args(4))
