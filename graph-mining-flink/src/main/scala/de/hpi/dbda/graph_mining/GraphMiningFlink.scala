@@ -6,7 +6,10 @@ import org.apache.flink.api.common.io.FileInputFormat
 import org.apache.flink.api.java.tuple.Tuple
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
 import java.io.File
+import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.log4j.{Level, Logger}
+
+import scalax.file.FileSystem
 
 /**
  * Created by rice on 08.06.15.
@@ -61,9 +64,9 @@ object GraphMiningFlink {
 
       val output = outputPath + "/triangle"
 
-      deleteFolder(output)
+    //  deleteFolder(output)
 
-      triangles.writeAsCsv(output,  "\n", " ")
+      triangles.writeAsCsv(output,  "\n", " ",  WriteMode.OVERWRITE)
     }
 
     if (mode.equals("truss")) {
@@ -73,9 +76,9 @@ object GraphMiningFlink {
 
       val output = outputPath + "/truss"
 
-      deleteFolder(output)
-
-      truss.writeAsCsv(output, "\n", " ")
+//      deleteFolder(output)
+//
+      truss.writeAsCsv(output, "\n", " ", WriteMode.OVERWRITE)
     }
 
 
@@ -85,9 +88,9 @@ object GraphMiningFlink {
       maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
       val output = outputPath + "/maxtruss"
-      deleteFolder(output)
+    //  deleteFolder(output)
 
-      trusses.writeAsText(output)
+      trusses.writeAsText(output, WriteMode.OVERWRITE)
 
       writeOutputTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
     }
