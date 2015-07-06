@@ -76,8 +76,6 @@ object GraphMiningFlink {
       deleteFolder(output)
 
       truss.writeAsCsv(output, "\n", " ")
-
-      truss.print
     }
 
 
