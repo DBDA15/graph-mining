@@ -144,13 +144,10 @@ object Truss {
 //
 //    graph = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3))
 //
-    var graphCount = graph.count()
-    var graphOldCount:Long = 0
+//    var graphCount = graph.count()
+//    var graphOldCount:Long = 0
 
-    while(graphCount != graphOldCount) {
-      graphOldCount = graphCount
-
-
+    val filteredTriangles = triangles.iterateWithTermination(10000)({triangles =>
       val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1)).name("prepare triangle count per edge")
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
@@ -162,28 +159,31 @@ object Truss {
       }.name("give edge triangle count")
         .filter(edge => edge.triangleCount >= k-2).name("filter edge with too small triangleCount")
 
+      val removableEdges = graph.filter(edge => edge.triangleCount < k-2)
 
-      triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
+      var joinedtriangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge1.triangleCount = edge.triangleCount
           triangle
       }.name("first triangle edge join")
 
-      triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
+      joinedtriangles = joinedtriangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge2.triangleCount = edge.triangleCount
           triangle
       }.name("second triangle edge join")
 
-      triangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
+      joinedtriangles = joinedtriangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge3.triangleCount = edge.triangleCount
           triangle
       }.name("third triangle edge join")
 
-      graphCount = graph.count
 
-    }
+      (joinedtriangles, removableEdges)
+    })
+
+    graph = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).distinct
 
     val verticesWithComponents = findRemainingComponents(graph)
 

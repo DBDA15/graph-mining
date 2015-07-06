@@ -76,6 +76,8 @@ object GraphMiningFlink {
       deleteFolder(output)
 
       truss.writeAsCsv(output, "\n", " ")
+
+      truss.print
     }
 
 
@@ -88,7 +90,6 @@ object GraphMiningFlink {
       deleteFolder(output)
 
       trusses.writeAsText(output)
-      trusses.print()
 
       writeOutputTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
     }
