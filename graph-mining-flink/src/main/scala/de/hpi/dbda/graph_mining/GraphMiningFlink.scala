@@ -24,14 +24,15 @@ object GraphMiningFlink {
       seperator = args(3)
     }
 
-//    val host = "tenemhead2"
-//    val port = 6123
-//    val jars = "target/graph-mining-flink-1.0-SNAPSHOT.jar"
+    val host = "tenemhead2"
+    val port = 6123
+    val jars = "target/graph-mining-flink-1.0-SNAPSHOT.jar"
+    val parallelism = 10
 
-//    val env = ExecutionEnvironment.createRemoteEnvironment(host, port, jars);
+    val env = ExecutionEnvironment.createRemoteEnvironment(host, port, parallelism, jars);
 
     // set up the execution environment
-    val env = ExecutionEnvironment.getExecutionEnvironment
+//    val env = ExecutionEnvironment.getExecutionEnvironment
 
     // val parameter = ParameterTool.fromArgs(args);
 

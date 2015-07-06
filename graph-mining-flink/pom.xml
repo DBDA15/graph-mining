@@ -257,6 +257,18 @@ under the License.
 				<groupId>net.alchim31.maven</groupId>
 				<artifactId>scala-maven-plugin</artifactId>
 				<version>3.1.4</version>
+				<configuration>
+					<launchers>
+						<launcher>
+							<id>ProgramRunner</id>
+							<mainClass>de.hpi.dbda.graph_mining.GraphMiningFlink</mainClass>
+							<jvmArgs>
+								<jvmArg>-Xms7g</jvmArg>
+								<jvmArg>-Xmx7g</jvmArg>
+							</jvmArgs>
+						</launcher>
+					</launchers>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -265,37 +277,6 @@ under the License.
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-
-			<!-- Eclipse Integration -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-eclipse-plugin</artifactId>
-				<version>2.8</version>
-				<configuration>
-					<downloadSources>true</downloadSources>
-					<projectnatures>
-						<projectnature>org.scala-ide.sdt.core.scalanature</projectnature>
-						<projectnature>org.eclipse.jdt.core.javanature</projectnature>
-					</projectnatures>
-					<buildcommands>
-						<buildcommand>org.scala-ide.sdt.core.scalabuilder</buildcommand>
-					</buildcommands>
-					<classpathContainers>
-						<classpathContainer>org.scala-ide.sdt.launching.SCALA_CONTAINER
-						</classpathContainer>
-						<classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER
-						</classpathContainer>
-					</classpathContainers>
-					<excludes>
-						<exclude>org.scala-lang:scala-library</exclude>
-						<exclude>org.scala-lang:scala-compiler</exclude>
-					</excludes>
-					<sourceIncludes>
-						<sourceInclude>**/*.scala</sourceInclude>
-						<sourceInclude>**/*.java</sourceInclude>
-					</sourceIncludes>
-				</configuration>
 			</plugin>
 
 			<!-- Adding scala source directories to build path -->
@@ -328,6 +309,7 @@ under the License.
 							<sources>
 								<source>src/test/scala</source>
 							</sources>
+
 						</configuration>
 					</execution>
 				</executions>
