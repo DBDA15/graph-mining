@@ -74,7 +74,8 @@ object Truss {
 
     val allEdges = graph.map(edge => (edge, edge)).name("triangleCalculation: map singlge edges")
 
-    val triangles = triads.join(allEdges, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo(0) {
+    //TODO use join strategy after k
+    val triangles = triads.join(allEdges, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
       (triadPart, edgePart) => Triangle(edgePart._2, triadPart._2, triadPart._3)
     }.name("calculate triangles")
 
@@ -89,65 +90,13 @@ object Truss {
 
   def calculateTruss(k:Int, firstGraph:DataSet[Edge]): DataSet[(Int, Edge)]={
 
-
-    //iterateWithTermination
     var graph = firstGraph
 
     val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2}).name("filter too small nodes")
 
-    var triangles = getTriangles(filteredGraph)
+    val triangles = getTriangles(filteredGraph)
 
-
-//    val updatedGraph = triangles.iterateDelta(filteredGraph, 10000, Array(0)){
-//      (s, ws) =>
-//
-//        val filteredTriangles = s.filter{triangle =>
-//          (triangle.edge1.triangleCount >= k-2 || triangle.edge1.triangleCount == -1)  && (triangle.edge2.triangleCount >= k-2 || triangle.edge2.triangleCount == -1) && (triangle.edge3.triangleCount >= k-2 || triangle.edge3.triangleCount == -1 )}.name("filter removed triangles")
-//
-//        val singleEdges = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1))
-//
-//        val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
-//          (edgeCount1, edgeCount2) => (edgeCount1._1, edgeCount1._2 + edgeCount2._2)}.name("count triangles per edge")
-//
-//        val edgesWithTriangleCount = triangleCountPerEdge.map{edgeInt =>
-//          edgeInt._1.triangleCount  = edgeInt._2
-//          edgeInt._1
-//        }
-//
-////        val newSolutionSet = edgesWithTriangleCount.filter(edge => edge.triangleCount >= k-2)
-//
-//        val removableEdges = edgesWithTriangleCount.filter(edge => edge.triangleCount < k-2)
-//
-//        val changedTriangles = filteredTriangles.join(edgesWithTriangleCount).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
-//          (triangle, edge) =>
-//            triangle.edge1.triangleCount = edge.triangleCount
-//            triangle
-//        }.join(edgesWithTriangleCount).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
-//          (triangle, edge) =>
-//            triangle.edge2.triangleCount = edge.triangleCount
-//            triangle
-//        }.join(edgesWithTriangleCount).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
-//          (triangle, edge) =>
-//            triangle.edge3.triangleCount = edge.triangleCount
-//            triangle
-//        }
-//
-//        //val newWs = triangles.filter{triangle => !(triangle.edges(0).triangleCount >= k-2 && triangle.edges(1).triangleCount >= k-2 && triangle.edges(2).triangleCount >= k-2)}.name("filter removed triangles end delta")
-//
-//        (changedTriangles, removableEdges)
-//    }
-//
-//    updatedGraph.print()
-//
-//    val filteredTriangles = triangles.filter{triangle =>
-//      (triangle.edge1.triangleCount >= k-2)  && (triangle.edge2.triangleCount >= k-2) && (triangle.edge3.triangleCount >= k-2)}.name("filter removed triangles")
-//
-//    graph = filteredTriangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3))
-//
-//    var graphCount = graph.count()
-//    var graphOldCount:Long = 0
-
-    val filteredTriangles = triangles.iterateWithTermination(10000)({triangles =>
+    val filteredTriangles = triangles.iterateWithTermination(Int.MaxValue)({triangles =>
       val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1)).name("prepare triangle count per edge")
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
@@ -161,19 +110,19 @@ object Truss {
 
       val removableEdges = graph.filter(edge => edge.triangleCount < k-2)
 
-      var joinedtriangles = triangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
+      var joinedtriangles = triangles.join(graph).where({triangle => (triangle.edge1.vertex1, triangle.edge1.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge1.triangleCount = edge.triangleCount
           triangle
       }.name("first triangle edge join")
 
-      joinedtriangles = joinedtriangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
+      joinedtriangles = joinedtriangles.join(graph).where({triangle => (triangle.edge2.vertex1, triangle.edge2.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge2.triangleCount = edge.triangleCount
           triangle
       }.name("second triangle edge join")
 
-      joinedtriangles = joinedtriangles.join(graph, JoinHint.REPARTITION_HASH_SECOND).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
+      joinedtriangles = joinedtriangles.join(graph).where({triangle => (triangle.edge3.vertex1, triangle.edge3.vertex2)}).equalTo("vertex1", "vertex2"){
         (triangle, edge) =>
           triangle.edge3.triangleCount = edge.triangleCount
           triangle
@@ -187,7 +136,7 @@ object Truss {
 
     val verticesWithComponents = findRemainingComponents(graph)
 
-    val edgeInComponent = verticesWithComponents.join(graph, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo("vertex1") {
+    val edgeInComponent = verticesWithComponents.join(graph, JoinHint.REPARTITION_HASH_FIRST).where(0).equalTo("vertex1") {
       (zone, edge) => (zone._2 , edge)
     }.name("edge in zone")
 
@@ -202,7 +151,7 @@ object Truss {
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge))).name("name edge to vertices")
 
     //TODO max iterations
-    val verticesWithComponents = vertices.iterateDelta(vertices, 1000, Array(0)) {
+    val verticesWithComponents = vertices.iterateDelta(vertices, Int.MaxValue, Array(0)) {
      (s, ws) =>
 
         // apply the step logic: join with the edges
@@ -218,7 +167,7 @@ object Truss {
         val minNeighbors = allNeighbors.groupBy(0).min(1)
 
         // update if the component of the candidate is smaller
-        val updatedComponents = minNeighbors.join(s, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
+        val updatedComponents = minNeighbors.join(s, JoinHint.BROADCAST_HASH_FIRST).where(0).equalTo(0) {
           (newVertex, oldVertex, out: Collector[(Vertex, Int)]) =>
             if (newVertex._2 < oldVertex._2) out.collect(newVertex)
         }.name("findRemaingGraphComponent: get updated components")
@@ -227,41 +176,6 @@ object Truss {
         (updatedComponents, updatedComponents)
 
 //    updatedComponents.print()
-    }
-
-    verticesWithComponents
-
-
-  }
-
-  def findRemainingComponents2(graph:DataSet[Edge]): DataSet[(Vertex, Int)] ={
-
-    val vertices = graph.flatMap(edge =>
-      List((edge.vertex1,  edge.vertex1.id), ( edge.vertex2, edge.vertex2.id)))
-      .groupBy(0).reduce({(zone1, zone2) => zone1})
-
-    //TODO max iterations
-    val verticesWithComponents = vertices.iterateDelta(vertices, 100, Array(0)) {
-      (s, ws) =>
-
-        // apply the step logic: join with the edges
-        val allNeighbors = ws.join(graph, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo("vertex1")
-        {(vertex, edge) => (edge.vertex2, vertex._2)}
-          .union(ws.join(graph, JoinHint.REPARTITION_HASH_SECOND).where(0).equalTo("vertex2")
-        {(vertex, edge) => (edge.vertex1, vertex._2)})
-
-
-        // select the minimum neighbor
-        val minNeighbors = allNeighbors.groupBy(0).min(1)
-
-        // update if the component of the candidate is smaller
-        val updatedComponents = minNeighbors.join(s).where(0).equalTo(0) {
-          (newVertex, oldVertex, out: Collector[(Vertex, Int)]) =>
-            if (newVertex._2 < oldVertex._2) out.collect(newVertex)
-        }
-
-        // delta and new workset are identical
-        (updatedComponents, updatedComponents)
     }
 
     verticesWithComponents
