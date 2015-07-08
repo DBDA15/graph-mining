@@ -61,7 +61,7 @@ object Truss {
     degreedGraph
   }
 
-  def getTriangles(graph:DataSet[Edge]): DataSet[Triangle] ={
+  def getTriangles(graph:DataSet[Edge], k:Int): DataSet[Triangle] ={
 
     val triads = graph.join(graph).where("vertex1").equalTo("vertex1").name("create triads")
       .filter(new FilterFunction[(Edge, Edge)] {
@@ -74,8 +74,10 @@ object Truss {
 
     val allEdges = graph.map(edge => (edge, edge)).name("triangleCalculation: map singlge edges")
 
-    //TODO use join strategy after k
-    val triangles = triads.join(allEdges, JoinHint.BROADCAST_HASH_SECOND).where(0).equalTo(0) {
+    //TODO Parameterization of #nodes?
+    val joinStrategy = if (k >= 8) JoinHint.BROADCAST_HASH_SECOND else JoinHint.REPARTITION_HASH_SECOND
+
+    val triangles = triads.join(allEdges, joinStrategy).where(0).equalTo(0) {
       (triadPart, edgePart) => Triangle(edgePart._2, triadPart._2, triadPart._3)
     }.name("calculate triangles")
 
@@ -94,7 +96,7 @@ object Truss {
 
     val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2}).name("filter too small nodes")
 
-    val triangles = getTriangles(filteredGraph)
+    val triangles = getTriangles(filteredGraph, k)
 
     val filteredTriangles = triangles.iterateWithTermination(Int.MaxValue)({triangles =>
       val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1)).name("prepare triangle count per edge")
