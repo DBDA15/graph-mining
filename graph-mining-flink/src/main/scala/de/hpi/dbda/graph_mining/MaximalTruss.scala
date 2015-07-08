@@ -80,9 +80,9 @@ object MaximalTruss {
       }
 
 
-      val trussCount = foundTrusses.first(1)
+      val trussCount = foundTrusses.count()
 
-      if ( trussCount == null){
+      if ( trussCount == 0){
         val newPossibleKs = possibleKs.filter(possibleK => possibleK < k)
 
         val newK = minK + (k-minK)/2
