@@ -8,11 +8,8 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-<<<<<<< HEAD
   case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = 0){
-=======
-  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int, var triangleCount:Int = 0){
->>>>>>> 1300e95100034e1e0259beda6f12137a93e55135
+
 //    def replace(newEdge:Edge): Unit ={
 //      vertex1 = newEdge.vertex1
 //      vertex2 = newEdge.vertex2
