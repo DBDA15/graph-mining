@@ -31,7 +31,7 @@ object CliqueWithTrusses {
 
     while ((k > maxCliqueSize || (oldk != k -1 && oldk>maxCliqueSize)) && k > 2){
       println("k: " + k)
-      val trusses = Truss.calculateTrusses(k-2, graph)
+      val trusses = Truss.calculateTrusses(k-2, graph)._1
 
       //partiton
       val partitions = Math.max(trusses.map(_._1).distinct().count(), 100).toInt

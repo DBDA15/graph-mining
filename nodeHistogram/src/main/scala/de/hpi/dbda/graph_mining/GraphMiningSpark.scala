@@ -58,9 +58,12 @@ object GraphMiningSpark extends App {
     conf.set("spark.hadoop.validateOutputSpecs", "false")
     val context = new SparkContext(conf)
 
-
     val startTime = java.lang.System.currentTimeMillis()
     var endTime:Long = 0
+    var addDegreesTime:Long = 0
+    var getTrianglesTime:Long = 0
+    var filterTriangleDegreesTime:Long = 0
+    var remainingGraphComponentsTime:Long = 0
 
     if (mode.equals("bidirect"))
     //calculateIncomingOutcomingCount(context, inputPath, args)
@@ -76,9 +79,15 @@ object GraphMiningSpark extends App {
       val trussOut = outputPath + "/truss"
 
       val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, 10), seperator))
-      val trusses = Truss.calculateTrusses(args(4).toInt, graph)
+
+       addDegreesTime = java.lang.System.currentTimeMillis()
+
+      val trussesResult = Truss.calculateTrusses(args(4).toInt, graph)
+      getTrianglesTime = trussesResult._2
+      filterTriangleDegreesTime = trussesResult._3
+      remainingGraphComponentsTime = trussesResult._4
       endTime = java.lang.System.currentTimeMillis()
-      trusses.saveAsTextFile(trussOut)
+      trussesResult._1.saveAsTextFile(trussOut)
 
     }
 
@@ -109,9 +118,15 @@ object GraphMiningSpark extends App {
       printWriter.close()
     }
 
-    println("##########################################")
-    println("overall time " + (endTime - startTime).toString)
-
+    println("##############################################################################")
+    println("############## add Degrees time = " + (addDegreesTime - startTime).toString + " #########################")
+    println("############## get Triangles time = " + (getTrianglesTime - addDegreesTime).toString + " #########################")
+    println("############## filter Triangles time = " + (filterTriangleDegreesTime - getTrianglesTime).toString + " #########################")
+    println("############## remaining Graph Components time = " + (remainingGraphComponentsTime - filterTriangleDegreesTime).toString + " #########################")
+    println("############## final zone mapping time = " + (endTime - remainingGraphComponentsTime).toString + " #########################")
+    println("##############################################################################")
+    println("############## overall used time = " + (endTime - startTime).toString + " #######################")
+    println("##############################################################################")
   }
 
 

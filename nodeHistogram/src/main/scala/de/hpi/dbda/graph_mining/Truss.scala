@@ -180,12 +180,12 @@ object Truss {
     val trussOut = outputDir + "/truss"
 
     val graph:RDD[Truss.Edge] = addDegreesToGraph(convertGraph(rawGraph, seperator))
-    val trusses = calculateTrusses(k, graph)
+    val trusses = calculateTrusses(k, graph)._1
     trusses.saveAsTextFile(trussOut)
   }
 
 
-  def calculateTrusses(k:Int, firstGraph:RDD[Truss.Edge]): RDD[(Int, Truss.Edge)] ={
+  def calculateTrusses(k:Int, firstGraph:RDD[Truss.Edge]): (RDD[(Int, Truss.Edge)], Long, Long, Long) ={
 
     var graphOldCount:Long = 0
 
@@ -196,6 +196,8 @@ object Truss {
     //TODO can we make this better? Only needed to remove the triangle counts for later
     var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(10)
 
+    val getTrianglesTime = java.lang.System.currentTimeMillis()
+
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount
 
@@ -203,8 +205,8 @@ object Truss {
 
       graph = singleEdges.reduceByKey((count1, count2) => count1 + count2)
         .map(t => {
-          t._1.triangleCount = t._2
-          t._1}
+        t._1.triangleCount = t._2
+        t._1}
         )
         .filter(e => e.triangleCount >= k)
 
@@ -212,18 +214,21 @@ object Truss {
 
       triangles =
         triangles.map(t => ((t.edges(0).vertex1.id, t.edges(0).vertex2.id), t))
-        .join(keyedGraph)
-        .map(t => ((t._2._1.edges(1).vertex1.id, t._2._1.edges(1).vertex2.id), new Triangle(List(t._2._2, t._2._1.edges(1), t._2._1.edges(2)))))
-        .join(keyedGraph)
-        .map(t => ((t._2._1.edges(2).vertex1.id, t._2._1.edges(2).vertex2.id), new Triangle(List(t._2._1.edges(0), t._2._2, t._2._1.edges(2)))))
-        .join(keyedGraph)
-        .map(t => new Triangle(List(t._2._1.edges(0), t._2._1.edges(1), t._2._2)))
+          .join(keyedGraph)
+          .map(t => ((t._2._1.edges(1).vertex1.id, t._2._1.edges(1).vertex2.id), new Triangle(List(t._2._2, t._2._1.edges(1), t._2._1.edges(2)))))
+          .join(keyedGraph)
+          .map(t => ((t._2._1.edges(2).vertex1.id, t._2._1.edges(2).vertex2.id), new Triangle(List(t._2._1.edges(0), t._2._2, t._2._1.edges(2)))))
+          .join(keyedGraph)
+          .map(t => new Triangle(List(t._2._1.edges(0), t._2._1.edges(1), t._2._2)))
 
       graphCount = graph.count()
     }
 
+    val filterTriangleDegreesTime = java.lang.System.currentTimeMillis()
 
     val components = findRemainingGraphComponents(graph)
+
+    val remainingGraphComponentsTime = java.lang.System.currentTimeMillis()
 
     //convert into zone => edge mappings
     val vertexInZComponent = components.map(zoneVertex => (zoneVertex._2, zoneVertex._1))
@@ -234,7 +239,7 @@ object Truss {
       .map(e => (e._2._2, e._2._1))
     vertexInZComponent.unpersist()
 
-    edgeInComponent
+    (edgeInComponent, getTrianglesTime, filterTriangleDegreesTime, remainingGraphComponentsTime)
   }
 
   def findRemainingGraphComponents(graph:RDD[Truss.Edge]): RDD[(Int, Vertex)] ={
