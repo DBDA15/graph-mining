@@ -176,16 +176,16 @@ object Truss {
   }
 
 
-  def calcTrussesAndSave(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
+  def calcTrussesAndSave(k:Int, rawGraph:RDD[String], outputDir:String, seperator:String, partitioning:Int): Unit ={
     val trussOut = outputDir + "/truss"
 
     val graph:RDD[Truss.Edge] = addDegreesToGraph(convertGraph(rawGraph, seperator))
-    val trusses = calculateTrusses(k, graph)
+    val trusses = calculateTrusses(k, graph, partitioning)
     trusses.saveAsTextFile(trussOut)
   }
 
 
-  def calculateTrusses(k:Int, firstGraph:RDD[Truss.Edge]): RDD[(Int, Truss.Edge)] ={
+  def calculateTrusses(k:Int, firstGraph:RDD[Truss.Edge], partitioning:Int): RDD[(Int, Truss.Edge)] ={
 
     var graphOldCount:Long = 0
 
@@ -194,7 +194,7 @@ object Truss {
     var graphCount = graph.count()
 
     //TODO can we make this better? Only needed to remove the triangle counts for later
-    var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(10)
+    var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(partitioning)
 
     while(graphCount != graphOldCount) {
       graphOldCount = graphCount

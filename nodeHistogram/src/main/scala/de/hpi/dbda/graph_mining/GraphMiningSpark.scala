@@ -47,10 +47,12 @@ object GraphMiningSpark extends App {
     val outputPath = args(2)
     var seperator = "\t"
     var k = 10
+    var partitioning = args(4).toInt
 
     if (args.length > 3) {
       seperator = args(3)
     }
+
 
 
     val conf = new SparkConf()
@@ -67,16 +69,16 @@ object GraphMiningSpark extends App {
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("triangle"))
-      Truss.getTrianglesAndSave(context.textFile(inputPath, 10), outputPath, seperator)
+      Truss.getTrianglesAndSave(context.textFile(inputPath, partitioning), outputPath, seperator)
 
     if(mode.equals("triangleNoSpark"))
-      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, 10), outputPath, seperator)
+      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, partitioning), outputPath, seperator)
 
     if (mode.equals("truss")){
       val trussOut = outputPath + "/truss"
 
-      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, 10), seperator))
-      val trusses = Truss.calculateTrusses(args(4).toInt, graph)
+      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, partitioning), seperator))
+      val trusses = Truss.calculateTrusses(args(5).toInt, graph, partitioning)
       endTime = java.lang.System.currentTimeMillis()
       trusses.saveAsTextFile(trussOut)
 
@@ -84,7 +86,7 @@ object GraphMiningSpark extends App {
 
     if(mode.equals("maxtruss")) {
       val outputFile = outputPath + "/maximalTruss/truss"
-      val result = MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath, args(4))
+      val result = MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, partitioning), seperator), context, outputPath, args(5), partitioning)
       endTime = java.lang.System.currentTimeMillis()
       result.saveAsTextFile(outputFile)
     }

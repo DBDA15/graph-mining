@@ -11,13 +11,13 @@ import org.apache.spark.rdd.RDD
  */
 object MaximalTruss {
 
-  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String, stringk:String): RDD[Truss.Edge] ={
+  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String, stringk:String, partitioning:Int): RDD[Truss.Edge] ={
     val k = stringk.toInt
 
     val degreedGraph = Truss.addDegreesToGraph(graph).distinct()
 //    val result = recursiveTruss(k, 0 ,2, List(degreedGraph), context)
 
-    val result = maxTruss(k,degreedGraph)
+    val result = maxTruss(k,degreedGraph, partitioning)
 //    result.foreach{t =>
 //      t.foreach(e => print(e + ", "))
 //      println("")}
@@ -39,7 +39,7 @@ object MaximalTruss {
 
 
   //returns list of subgraphes
-  def recursiveTruss(k:Int, maxK:Int, minK:Int, graphs: List[RDD[Edge]], context:SparkContext): List[RDD[Edge]] = {
+  def recursiveTruss(k:Int, maxK:Int, minK:Int, graphs: List[RDD[Edge]], context:SparkContext, partitioning:Int): List[RDD[Edge]] = {
 
     println(k)
     if (maxK == k || minK == k){
@@ -48,7 +48,7 @@ object MaximalTruss {
     } else {
 
       val foundTrusses = graphs.flatMap{ graph =>
-        val trusses = Truss.calculateTrusses(k-2, graph.filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1))
+        val trusses = Truss.calculateTrusses(k-2, graph.filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1), partitioning)
         val groupedEdgesPerTruss = trusses.groupByKey()
 
         val x = groupedEdgesPerTruss.collect()
@@ -58,20 +58,20 @@ object MaximalTruss {
 
       if (foundTrusses.isEmpty){
         val newK = minK + (k-minK)/2
-        recursiveTruss(newK, k, minK, graphs, context)
+        recursiveTruss(newK, k, minK, graphs, context, partitioning)
       } else {
         if (maxK == 0){
           val newK = 2*k
-          recursiveTruss(newK, maxK, k, foundTrusses, context)
+          recursiveTruss(newK, maxK, k, foundTrusses, context, partitioning)
         } else {
           val newK = k + (maxK-k)/2
-          recursiveTruss(newK, maxK, k, foundTrusses, context)
+          recursiveTruss(newK, maxK, k, foundTrusses, context, partitioning)
         }
       }
     }
   }
 
-  def maxTruss(initialK:Int, graph:RDD[Truss.Edge]): RDD[Edge] = {
+  def maxTruss(initialK:Int, graph:RDD[Truss.Edge], partitioning:Int): RDD[Edge] = {
     var graphs = graph
     var maxK = 0
     var minK = 2
@@ -83,7 +83,7 @@ object MaximalTruss {
       val filteredGraph = graphs.filter(e => e.vertex1.degree >= k - 2 && e.vertex2.degree >= k - 2)
       //      filteredGraph.print()
 
-      val trusses = Truss.calculateTrusses(k-2, filteredGraph)
+      val trusses = Truss.calculateTrusses(k-2, filteredGraph, partitioning)
 
       val foundTrusses: RDD[Edge] = trusses.map { truss =>
         truss._2.truss = truss._1

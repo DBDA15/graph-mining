@@ -55,4 +55,58 @@ object MaximalTruss {
     result
 
   }
+
+  def maxTrussWithWriting(graph: DataSet[Edge], stringk:String, executionEnvironment: ExecutionEnvironment): DataSet[Edge] ={
+
+    var k = stringk.toInt
+    var maxK = 0
+    var minK = 2
+
+    var result = graph
+
+    while (k != maxK && k != minK){
+
+      print ("############################ k is " + k +" #################################")
+      //      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
+      ////      filteredGraph.print()
+
+      val trusses = Truss.calculateTruss(k, graph)
+
+      val trussCount = trusses.count()
+
+      val result:DataSet[Edge] = trusses.map{truss =>
+        //          truss._2.truss = truss._1
+        truss._2
+      }
+
+      result.wr
+
+      if ( trussCount == 0){
+        val newK = minK + (k-minK)/2
+        maxK = k
+        k = newK
+      } else {
+        if (maxK == 0){
+          val newK = 2*k
+          minK = k
+          k = newK
+        } else {
+          val newK = k + (maxK -k)/2
+          minK = k
+          k = newK
+        }
+
+        //graphs = foundTrusses
+      }
+
+    }
+
+    print ("############################ final k is " + k +" #################################")
+    result
+
+  }
+
+
+
+
 }
