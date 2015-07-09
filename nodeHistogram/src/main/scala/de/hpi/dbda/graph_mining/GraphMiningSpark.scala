@@ -58,6 +58,10 @@ object GraphMiningSpark extends App {
     conf.set("spark.hadoop.validateOutputSpecs", "false")
     val context = new SparkContext(conf)
 
+
+    val startTime = java.lang.System.currentTimeMillis()
+    var endTime:Long = 0
+
     if (mode.equals("bidirect"))
     //calculateIncomingOutcomingCount(context, inputPath, args)
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
@@ -68,11 +72,22 @@ object GraphMiningSpark extends App {
     if(mode.equals("triangleNoSpark"))
       Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, 10), outputPath, seperator)
 
-    if (mode.equals("truss"))
-      Truss.calcTrussesAndSave(2, context.textFile(inputPath, 10), outputPath, seperator)
+    if (mode.equals("truss")){
+      val trussOut = outputPath + "/truss"
 
-    if(mode.equals("maxtruss"))
-      MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath, args(4))
+      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, 10), seperator))
+      val trusses = Truss.calculateTrusses(args(4).toInt, graph)
+      endTime = java.lang.System.currentTimeMillis()
+      trusses.saveAsTextFile(trussOut)
+
+    }
+
+    if(mode.equals("maxtruss")) {
+      val outputFile = outputPath + "/maximalTruss/truss"
+      val result = MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, 10), seperator), context, outputPath, args(4))
+      endTime = java.lang.System.currentTimeMillis()
+      result.saveAsTextFile(outputFile)
+    }
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
@@ -93,6 +108,9 @@ object GraphMiningSpark extends App {
         printWriter.println()})
       printWriter.close()
     }
+
+    println("##########################################")
+    println("overall time " + (endTime - startTime).toString)
 
   }
 

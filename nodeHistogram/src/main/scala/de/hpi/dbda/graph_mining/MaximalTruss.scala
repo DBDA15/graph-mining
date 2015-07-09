@@ -11,10 +11,7 @@ import org.apache.spark.rdd.RDD
  */
 object MaximalTruss {
 
-  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String, stringk:String): Unit ={
-
-    val outputFile = outputPath + "/maximalTruss/truss"
-
+  def maximumTruss(graph: RDD[Edge], context:SparkContext, outputPath:String, stringk:String): RDD[Truss.Edge] ={
     val k = stringk.toInt
 
     val degreedGraph = Truss.addDegreesToGraph(graph).distinct()
@@ -25,7 +22,7 @@ object MaximalTruss {
 //      t.foreach(e => print(e + ", "))
 //      println("")}
 
-    result.saveAsTextFile(outputFile)
+    result
    // result.foreach(t => t.saveAsTextFile(outputFile))
 
 //    result.zipWithIndex.foreach { case (t, i) =>
