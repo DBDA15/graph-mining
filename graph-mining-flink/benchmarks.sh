@@ -31,6 +31,7 @@ for config in "${!configurations[@]}"; do
 		echo "Running $config $i..."
 		# echo ${configurations["$config"]}
 		(time ${configurations["$config"]} >> "output_$config_$i.log") &>> time.log
+		sleep 3
 		echo "====================================" >> time.log
 		echo "" >> time.log
 	done

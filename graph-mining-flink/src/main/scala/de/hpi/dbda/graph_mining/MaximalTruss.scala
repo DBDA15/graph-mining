@@ -14,7 +14,7 @@ object MaximalTruss {
     var maxK = 0
     var minK = 2
 
-    var graphs = graph
+    var result = graph
 
     while (k != maxK && k != minK){
 
@@ -22,9 +22,9 @@ object MaximalTruss {
 //      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
 ////      filteredGraph.print()
 
-      val trusses = Truss.calculateTruss(k, graphs)
+      val trusses = Truss.calculateTruss(k, graph)
 
-      val foundTrusses:DataSet[Edge] = trusses.map{truss =>
+      val result:DataSet[Edge] = trusses.map{truss =>
 //          truss._2.truss = truss._1
           truss._2
         }
@@ -46,13 +46,13 @@ object MaximalTruss {
           k = newK
         }
 
-        graphs = foundTrusses
+        //graphs = foundTrusses
       }
 
     }
 
     print ("############################ final k is " + k +" #################################")
-    graphs
+    result
 
   }
 }
