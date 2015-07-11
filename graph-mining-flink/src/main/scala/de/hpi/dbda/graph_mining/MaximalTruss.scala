@@ -67,6 +67,10 @@ object MaximalTruss {
 
     var newGraph = graph
 
+    var readVar = 0
+
+    graph.writeAsText("D:\\_uni\\_Master3\\DBDA\\graph-mining\\output\\writeTest\\" + readVar.toString, WriteMode.OVERWRITE)
+
     while (k != maxK && k != minK){
 
       print ("############################ k is " + k +" #################################")
@@ -80,7 +84,7 @@ object MaximalTruss {
         truss._2
       }
 
-
+      result.writeAsText("D:\\_uni\\_Master3\\DBDA\\graph-mining\\output\\writeTest\\" + (1 - readVar).toString, WriteMode.OVERWRITE)
 
       val trussCount = trusses.count()
 
@@ -88,9 +92,8 @@ object MaximalTruss {
         val newK = minK + (k-minK)/2
         maxK = k
         k = newK
-        newGraph.writeAsText("hdfs://tenemhead2/tmp/graph-mining/", WriteMode.OVERWRITE)
       } else {
-        result.writeAsText("hdfs://tenemhead2/tmp/graph-mining/", WriteMode.OVERWRITE)
+        readVar = 1 - readVar
         if (maxK == 0){
           val newK = 2*k
           minK = k
@@ -104,7 +107,7 @@ object MaximalTruss {
 
         //graphs = foundTrusses
       }
-      newGraph = Truss.convertDegreedGraph(executionEnvironment.readTextFile("hdfs://tenemhead2/tmp/graph-mining/"), "\t")
+      newGraph = Truss.convertDegreedGraph(executionEnvironment.readTextFile("D:\\_uni\\_Master3\\DBDA\\graph-mining\\output\\writeTest\\" + readVar.toString), "\t")
 
     }
 
