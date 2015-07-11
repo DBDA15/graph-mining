@@ -89,6 +89,7 @@ object MaximalTruss {
         maxK = k
         k = newK
       } else {
+        newGraph = Truss.convertDegreedGraph(executionEnvironment.readTextFile("hdfs://tenemhead2/tmp/graph-mining/"), "\t")
         if (maxK == 0){
           val newK = 2*k
           minK = k
@@ -98,8 +99,7 @@ object MaximalTruss {
           minK = k
           k = newK
         }
-
-        newGraph = Truss.convertDegreedGraph(executionEnvironment.readTextFile("hdfs://tenemhead2/tmp/graph-mining/"), "\t")
+        
         //graphs = foundTrusses
       }
 
