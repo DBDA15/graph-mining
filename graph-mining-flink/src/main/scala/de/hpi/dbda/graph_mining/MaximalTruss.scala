@@ -88,6 +88,7 @@ object MaximalTruss {
         val newK = minK + (k-minK)/2
         maxK = k
         k = newK
+        newGraph.writeAsText("hdfs://tenemhead2/tmp/graph-mining/", WriteMode.OVERWRITE)
       } else {
         result.writeAsText("hdfs://tenemhead2/tmp/graph-mining/", WriteMode.OVERWRITE)
         if (maxK == 0){
