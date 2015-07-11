@@ -171,7 +171,6 @@ object Truss {
 
     val graphMap1 = graph.flatMap(edge => List((edge.vertex1, edge), (edge.vertex2, edge))).name("name edge to vertices")
 
-    //TODO max iterations
     val verticesWithComponents = vertices.iterateDelta(vertices, Int.MaxValue, Array(0)) {
      (s, ws) =>
 

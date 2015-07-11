@@ -51,13 +51,9 @@ object GraphMiningFlink {
 
     val rawGraphTime = java.lang.System.currentTimeMillis() - startTime
 
-    var dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
+    val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
 
     val addDegreesTime = java.lang.System.currentTimeMillis() - startTime - rawGraphTime
-
-    dataset.writeAsText("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest", WriteMode.OVERWRITE)
-
-    dataset = Truss.convertDegreedGraph(env.readTextFile("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest"), "\t")
 
     var maxTrussesTime = 0.toLong
     var writeOutputTime = 0.toLong
@@ -93,6 +89,20 @@ object GraphMiningFlink {
 
       val output = outputPath + "/maxtruss"
     //  deleteFolder(output)
+
+      trusses.writeAsText(output, WriteMode.OVERWRITE)
+
+      writeOutputTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
+    }
+
+    if(mode.equals("maxtrusswriting")) {
+      val trusses = MaximalTruss.maxTrussWithWriting(dataset, args(4), env)
+      //      val trusses = MaximalTruss.maxTruss1(dataset, args(4), env)
+
+      maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
+
+      val output = outputPath + "/maxtruss"
+      //  deleteFolder(output)
 
       trusses.writeAsText(output, WriteMode.OVERWRITE)
 

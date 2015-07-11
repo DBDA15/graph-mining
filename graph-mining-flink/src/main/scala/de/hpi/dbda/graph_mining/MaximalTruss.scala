@@ -2,6 +2,7 @@ package de.hpi.dbda.graph_mining
 
 import org.apache.flink.api.scala.{ExecutionEnvironment, DataSet}
 import org.apache.flink.api.scala._
+import org.apache.flink.core.fs.FileSystem.WriteMode
 
 /**
  * Created by rice on 17.06.15.
@@ -64,20 +65,24 @@ object MaximalTruss {
 
     var result = graph
 
+    var newGraph = graph
+
     while (k != maxK && k != minK){
 
       print ("############################ k is " + k +" #################################")
       //      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
       ////      filteredGraph.print()
 
-      val trusses = Truss.calculateTruss(k, graph)
+      val trusses = Truss.calculateTruss(k, newGraph)
 
-      val trussCount = trusses.count()
-
-      val result:DataSet[Edge] = trusses.map{truss =>
+      result = trusses.map{truss =>
         //          truss._2.truss = truss._1
         truss._2
       }
+
+      result.writeAsText("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest", WriteMode.OVERWRITE)
+
+      val trussCount = trusses.count()
 
       if ( trussCount == 0){
         val newK = minK + (k-minK)/2
@@ -94,6 +99,7 @@ object MaximalTruss {
           k = newK
         }
 
+        newGraph = Truss.convertDegreedGraph(executionEnvironment.readTextFile("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest"), "\t")
         //graphs = foundTrusses
       }
 
