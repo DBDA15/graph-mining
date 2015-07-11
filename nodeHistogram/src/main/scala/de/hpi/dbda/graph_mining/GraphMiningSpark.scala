@@ -78,7 +78,7 @@ object GraphMiningSpark extends App {
     if (mode.equals("truss")){
       val trussOut = outputPath + "/truss"
 
-      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, 10), seperator))
+      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, 8), seperator))
 
        addDegreesTime = java.lang.System.currentTimeMillis()
 
