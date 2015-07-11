@@ -79,7 +79,6 @@ object MaximalTruss {
         truss._2
       }
 
-      result.wr
 
       if ( trussCount == 0){
         val newK = minK + (k-minK)/2
