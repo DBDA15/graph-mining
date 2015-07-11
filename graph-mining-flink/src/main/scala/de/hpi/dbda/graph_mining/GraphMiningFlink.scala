@@ -57,7 +57,7 @@ object GraphMiningFlink {
 
     dataset.writeAsText("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest", WriteMode.OVERWRITE)
 
-    dataset = Truss.convertGraph(env.readTextFile("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest"), "\t")
+    dataset = Truss.convertDegreedGraph(env.readTextFile("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest"), "\t")
 
     var maxTrussesTime = 0.toLong
     var writeOutputTime = 0.toLong

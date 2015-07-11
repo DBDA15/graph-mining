@@ -38,6 +38,19 @@ object Truss {
     convertedGraph
   }
 
+  def convertDegreedGraph(rawGraph:DataSet[String], seperator:String): DataSet[Edge] = {
+    val convertedGraph = rawGraph.map(line => {
+      val splitted = line.split(seperator)
+      val f = new Vertex(splitted(0).toInt, splitted(1).toInt)
+      val s = new Vertex(splitted(2).toInt, splitted(3).toInt)
+      createEdge(f, s)
+    }
+    ).name("convert Graph")
+    convertedGraph
+  }
+
+
+
   def createEdge(vert1:Vertex, vert2:Vertex): Edge = {
     if (vert1.degree < vert2.degree) new Edge(vert1, vert2)
     else

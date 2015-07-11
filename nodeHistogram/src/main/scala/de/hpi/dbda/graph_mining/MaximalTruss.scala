@@ -38,38 +38,38 @@ object MaximalTruss {
   }
 
 
-  //returns list of subgraphes
-  def recursiveTruss(k:Int, maxK:Int, minK:Int, graphs: List[RDD[Edge]], context:SparkContext, partitioning:Int): List[RDD[Edge]] = {
-
-    println(k)
-    if (maxK == k || minK == k){
-      println("return k  " + k)
-      graphs
-    } else {
-
-      val foundTrusses = graphs.flatMap{ graph =>
-        val trusses = Truss.calculateTrusses(k-2, graph.filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1), partitioning)._1
-        val groupedEdgesPerTruss = trusses.groupByKey()
-
-        val x = groupedEdgesPerTruss.collect()
-          .map(e => context.parallelize(e._2.toSeq)).toList
-        x
-      }
-
-      if (foundTrusses.isEmpty){
-        val newK = minK + (k-minK)/2
-        recursiveTruss(newK, k, minK, graphs, context, partitioning)
-      } else {
-        if (maxK == 0){
-          val newK = 2*k
-          recursiveTruss(newK, maxK, k, foundTrusses, context, partitioning)
-        } else {
-          val newK = k + (maxK-k)/2
-          recursiveTruss(newK, maxK, k, foundTrusses, context, partitioning)
-        }
-      }
-    }
-  }
+//  //returns list of subgraphes
+//  def recursiveTruss(k:Int, maxK:Int, minK:Int, graphs: List[RDD[Edge]], context:SparkContext, partitioning:Int): List[RDD[Edge]] = {
+//
+//    println(k)
+//    if (maxK == k || minK == k){
+//      println("return k  " + k)
+//      graphs
+//    } else {
+//
+//      val foundTrusses = graphs.flatMap{ graph =>
+//        val trusses = Truss.calculateTrusses(k-2, graph.filter(e => e.vertex1.degree >= k-1 && e.vertex2.degree >= k-1), partitioning)._1
+//        val groupedEdgesPerTruss = trusses.groupByKey()
+//
+//        val x = groupedEdgesPerTruss.collect()
+//          .map(e => context.parallelize(e._2.toSeq)).toList
+//        x
+//      }
+//
+//      if (foundTrusses.isEmpty){
+//        val newK = minK + (k-minK)/2
+//        recursiveTruss(newK, k, minK, graphs, context, partitioning)
+//      } else {
+//        if (maxK == 0){
+//          val newK = 2*k
+//          recursiveTruss(newK, maxK, k, foundTrusses, context, partitioning)
+//        } else {
+//          val newK = k + (maxK-k)/2
+//          recursiveTruss(newK, maxK, k, foundTrusses, context, partitioning)
+//        }
+//      }
+//    }
+//  }
 
   def maxTruss(initialK:Int, graph:RDD[Truss.Edge], partitioning:Int): RDD[Edge] = {
     var graphs = graph
