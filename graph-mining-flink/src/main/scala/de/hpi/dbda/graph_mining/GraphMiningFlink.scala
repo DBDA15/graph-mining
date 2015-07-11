@@ -51,10 +51,13 @@ object GraphMiningFlink {
 
     val rawGraphTime = java.lang.System.currentTimeMillis() - startTime
 
-    val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
+    var dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
 
     val addDegreesTime = java.lang.System.currentTimeMillis() - startTime - rawGraphTime
 
+    dataset.writeAsText("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest", WriteMode.OVERWRITE)
+
+    dataset = Truss.convertGraph(env.readTextFile("D:/_uni/_Master3/DBDA/graph-mining/output/writeTest"), "\t")
 
     var maxTrussesTime = 0.toLong
     var writeOutputTime = 0.toLong

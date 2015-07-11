@@ -15,7 +15,13 @@ import scala.concurrent.duration.durationToPair
  */
 
 case class Vertex(id: Int, degree:Int)
-case class Edge(vertex1:Vertex,vertex2:Vertex, var triangleCount:Int = -1)
+
+case class Edge(vertex1:Vertex,vertex2:Vertex, var triangleCount:Int = -1) {
+  override def toString():String = {
+    vertex1.id.toString + "\t" + vertex1.degree.toString + "\t" + vertex2.id.toString + "\t" + vertex2.degree.toString
+  }
+}
+
 case class Triangle(edge1:Edge, edge2:Edge, edge3:Edge)
 
 
