@@ -194,7 +194,7 @@ object Truss {
     var graphCount = graph.count()
 
     //TODO can we make this better? Only needed to remove the triangle counts for later
-    var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(4)
+    var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(2)
 
     val getTrianglesTime = java.lang.System.currentTimeMillis()
 
