@@ -10,10 +10,6 @@ import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint
 
 import scala.concurrent.duration.durationToPair
 
-/**
- * Created by rice on 12.06.15.
- */
-
 case class Vertex(id: Int, degree:Int)
 
 case class Edge(vertex1:Vertex,vertex2:Vertex, var triangleCount:Int = -1) {
@@ -195,7 +191,6 @@ object Truss {
         // delta and new workset are identical
         (updatedComponents, updatedComponents)
 
-//    updatedComponents.print()
     }
 
     verticesWithComponents

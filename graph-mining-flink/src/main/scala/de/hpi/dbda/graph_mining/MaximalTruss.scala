@@ -4,9 +4,6 @@ import org.apache.flink.api.scala.{ExecutionEnvironment, DataSet}
 import org.apache.flink.api.scala._
 import org.apache.flink.core.fs.FileSystem.WriteMode
 
-/**
- * Created by rice on 17.06.15.
- */
 object MaximalTruss {
 
   def maxTruss(graph: DataSet[Edge], stringk:String): DataSet[Edge] ={
@@ -20,13 +17,9 @@ object MaximalTruss {
     while (k != maxK && k != minK){
 
       print ("############################ k is " + k +" #################################")
-//      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
-////      filteredGraph.print()
-
       val trusses = Truss.calculateTruss(k, graph)
 
       val result:DataSet[Edge] = trusses.map{truss =>
-//          truss._2.truss = truss._1
           truss._2
         }
 
@@ -46,8 +39,6 @@ object MaximalTruss {
           minK = k
           k = newK
         }
-
-        //graphs = foundTrusses
       }
 
     }
@@ -74,13 +65,9 @@ object MaximalTruss {
     while (k != maxK && k != minK){
 
       print ("############################ k is " + k +" #################################")
-      //      val filteredGraph = graphs.filter(e => e.vertex1.degree >= k-2 && e.vertex2.degree >= k-2)
-      ////      filteredGraph.print()
-
       val trusses = Truss.calculateTruss(k, newGraph)
 
       result = trusses.map{truss =>
-        //          truss._2.truss = truss._1
         truss._2
       }
 
@@ -103,9 +90,6 @@ object MaximalTruss {
           minK = k
           k = newK
         }
-
-
-        //graphs = foundTrusses
       }
       newGraph = Truss.convertDegreedGraph(executionEnvironment.readTextFile("hdfs://tenemhead2/tmp/graph-mining/" + readVar.toString), "\t")
 

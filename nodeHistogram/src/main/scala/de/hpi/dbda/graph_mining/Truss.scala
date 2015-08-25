@@ -1,6 +1,6 @@
 package de.hpi.dbda.graph_mining
 
-import org.apache.spark.{HashPartitioner, RangePartitioner}
+import org.apache.spark.{RangePartitioner}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.storage.StorageLevel
 
@@ -17,34 +17,6 @@ object Truss {
   }
 
   case class Triangle(edges:List[Edge]){
-
-//    //check for circle
-//    def isCircular: Boolean={
-//        var e1_v1 = this.edges.head.vertex1.id
-//        var e1_v2 = this.edges.head.vertex2.id
-//        var e2_v1 = this.edges(1).vertex1.id
-//        var e2_v2 = this.edges(1).vertex2.id
-//        var e3_v1 = this.edges(2).vertex1.id
-//        var e3_v2 = this.edges(2).vertex2.id
-//
-//        if (!this.edges.head.original) {
-//          e1_v1 = this.edges.head.vertex2.id
-//          e1_v2 = this.edges.head.vertex1.id
-//        }
-//
-//        if (!this.edges(1).original) {
-//          e2_v1 = this.edges(1).vertex2.id
-//          e2_v2 = this.edges(1).vertex1.id
-//        }
-//
-//        if (!this.edges(2).original) {
-//          e3_v1 = this.edges(2).vertex2.id
-//          e3_v2 = this.edges(2).vertex1.id
-//        }
-//
-//        xor(e1_v1 == e2_v2, e1_v1 == e3_v2) && xor(e2_v1 == e1_v2, e2_v1 == e3_v2)
-//    }
-
     def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
   }
 
@@ -59,55 +31,19 @@ object Truss {
   }
 
   def getTrianglesAndSave(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
-    val triangleOut = outputDir + "/all"
-    val circularTriangleOut = outputDir + "/circular"
-//    val nonCircularTriangleOut = outputDir + "/nonCircular"
-
-
     val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
-//    val graph = convertGraph(rawGraph, seperator)
-    // sort edges
-
     val uniqueTriangles = getTriangles(graph)
     val count = uniqueTriangles.count()
     println(count)
-//    uniqueTriangles.saveAsTextFile(triangleOut)
-
-//    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
-
-//    circularTriangles.saveAsTextFile(circularTriangleOut)
-
-    /* //check for non circle
-    val noncircularTriangles = uniqueTriangles.filter(edgeList =>{
-     !(xor(edgeList(0)._1 == edgeList(1)._2, edgeList(0)._1 == edgeList(2)._2) && xor(edgeList(1)._1 == edgeList(0)._2, edgeList(1)._1 == edgeList(2)._2))
-    })
-
-    noncircularTriangles.saveAsTextFile(nonCircularTriangleOut)*/
   }
 
 
   def getTrianglesNoSparkAndSave(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
-    val triangleOut = outputDir + "/allNoSpark"
-    val circularTriangleOut = outputDir + "/circularNoSpark"
-    //    val nonCircularTriangleOut = outputDir + "/nonCircular"
-
     val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
-    // sort edges
 
     val uniqueTriangles = getTrianglesNoSpark(graph)
     val count = uniqueTriangles.count()
     println(count)
-
-//    val circularTriangles = uniqueTriangles.filter(triangle => triangle.isCircular)
-
-  //  circularTriangles.saveAsTextFile(circularTriangleOut)
-
-    /* //check for non circle
-    val noncircularTriangles = uniqueTriangles.filter(edgeList =>{
-     !(xor(edgeList(0)._1 == edgeList(1)._2, edgeList(0)._1 == edgeList(2)._2) && xor(edgeList(1)._1 == edgeList(0)._2, edgeList(1)._1 == edgeList(2)._2))
-    })
-
-    noncircularTriangles.saveAsTextFile(nonCircularTriangleOut)*/
   }
 
   def getTriangles(graph:RDD[Edge]): RDD[Triangle] ={
@@ -126,8 +62,6 @@ object Truss {
       .map( combination => {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
-
-//    val t1 = triads.repartition(10)
 
     val triangles = triads
       .join(allEdges)  //join with single edges
@@ -154,8 +88,6 @@ object Truss {
       (getOuterTriangleVertices(combination), List(combination._2._1, combination._2._2))
     })
 
-//    val triads1 = triads.repartition(10)
-
     val triadsAndSingleEdges = triads.union(allEdges)
 
    //reduce2
@@ -164,10 +96,9 @@ object Truss {
       .flatMap{p =>
         val edge = p._2.find(e => e.length == 1)
         edge match{
-          case Some(s) => {
+          case Some(s) =>
             val edgePairs = p._2.filterNot(e => e.length == 1)
-             edgePairs.map(ep => Triangle(s ::: ep))
-        }
+            edgePairs.map(ep => Triangle(s ::: ep))
           case None => List()
         }
     }
@@ -194,7 +125,6 @@ object Truss {
 
     var graphCount = graph.count()
 
-    //TODO can we make this better? Only needed to remove the triangle counts for later
     var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(partitioning)
 
     val getTrianglesTime = java.lang.System.currentTimeMillis()
@@ -214,7 +144,7 @@ object Truss {
       val keyedGraph = graph.map(e => ((e.vertex1.id, e.vertex2.id), e)).persist(StorageLevel.MEMORY_AND_DISK)
 
       triangles =
-        triangles.map(t => ((t.edges(0).vertex1.id, t.edges(0).vertex2.id), t))
+        triangles.map(t => ((t.edges.head.vertex1.id, t.edges(0).vertex2.id), t))
           .join(keyedGraph)
           .map(t => ((t._2._1.edges(1).vertex1.id, t._2._1.edges(1).vertex2.id), new Triangle(List(t._2._2, t._2._1.edges(1), t._2._1.edges(2)))))
           .join(keyedGraph)

@@ -17,11 +17,6 @@ import scalax.file.FileSystem
 object GraphMiningFlink {
 
   def main(args: Array[String]) {
-//
-//    val level = Level.WARN
-//    Logger.getLogger("org").setLevel(level)
-//    Logger.getLogger("akka").setLevel(level)
-
 
     val mode = args(0)
     val inputPath = args(1)
@@ -32,18 +27,8 @@ object GraphMiningFlink {
     if (args.length > 3) {
       seperator = args(3)
     }
-
-//    val host = "tenemhead2"
-//    val port = 6123
-//    val jars = "target/graph-mining-flink-1.0-SNAPSHOT.jar"
-//    val parallelism = 10
-//
-//    val env = ExecutionEnvironment.createRemoteEnvironment(host, port, parallelism, jars);
-
-    // set up the execution environment
     val env = ExecutionEnvironment.getExecutionEnvironment
 
-    // val parameter = ParameterTool.fromArgs(args);
 
     val startTime = java.lang.System.currentTimeMillis()
 
@@ -63,8 +48,6 @@ object GraphMiningFlink {
 
       val output = outputPath + "/triangle"
 
-    //  deleteFolder(output)
-
       triangles.writeAsCsv(output,  "\n", " ",  WriteMode.OVERWRITE)
     }
 
@@ -75,20 +58,15 @@ object GraphMiningFlink {
 
       val output = outputPath + "/truss"
 
-//      deleteFolder(output)
-//
       truss.writeAsCsv(output, "\n", " ", WriteMode.OVERWRITE)
     }
 
 
     if(mode.equals("maxtruss")) {
       val trusses = MaximalTruss.maxTruss(dataset, args(4))
-//      val trusses = MaximalTruss.maxTruss1(dataset, args(4), env)
-
       maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
       val output = outputPath + "/maxtruss"
-    //  deleteFolder(output)
 
       trusses.writeAsText(output, WriteMode.OVERWRITE)
 
@@ -97,27 +75,21 @@ object GraphMiningFlink {
 
     if(mode.equals("maxtrusswriting")) {
       val trusses = MaximalTruss.maxTrussWithWriting(dataset, args(4), env)
-      //      val trusses = MaximalTruss.maxTruss1(dataset, args(4), env)
 
       maxTrussesTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
 
       val output = outputPath + "/maxtruss"
-      //  deleteFolder(output)
 
       trusses.writeAsText(output, WriteMode.OVERWRITE)
 
       writeOutputTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
     }
 
-    // execute program.
-//    println(env.getExecutionPlan())
     env.execute("Flink Scala Graph Mining")
 
     val endTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
     val diffTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
 
-//    val fullTime = java.lang.System.currentTimeMillis() - startTime
-//    val temp = 1+1
     println("############## overall used time = " + diffTime + " #######################")
     println("############## add Degrees time = " + addDegreesTime + " #########################")
     println("############## raw Graph reading time = " + rawGraphTime + " ######################")

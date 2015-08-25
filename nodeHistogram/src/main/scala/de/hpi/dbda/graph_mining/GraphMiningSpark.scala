@@ -31,8 +31,6 @@ object GraphMiningSpark extends App {
     }
   }
 
-  //print("hello World")
-
   @Override
   override def main(args: Array[String]) {
 
@@ -46,8 +44,7 @@ object GraphMiningSpark extends App {
     val inputPath = args(1)
     val outputPath = args(2)
     var seperator = "\t"
-    var k = 10
-    var partitioning = args(4).toInt
+    val partitioning = args(4).toInt
 
     if (args.length > 3) {
       seperator = args(3)
@@ -138,7 +135,6 @@ object GraphMiningSpark extends App {
     val edges =
       context.textFile(inputPath)
         .flatMap(line => List(
-//        new Edge(0,0,0,0).apply(line.split("\t")(0).toInt,line.split("\t")(1).toInt).asTuple))
        generateEdge(line.split(seperator)(0).toInt,line.split(seperator)(1).toInt).asTuple))
 
     val summedEdges = edges.reduceByKey((edge1, edge2) =>
@@ -196,7 +192,6 @@ object GraphMiningSpark extends App {
       .reduceByKey((f1, f2) => f1 + f2)
 
     combinedCount.saveAsTextFile(combinedPath)
-    //val test = combinedCount.take(30)
 
   }
 }
