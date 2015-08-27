@@ -8,13 +8,7 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = 0){
-
-//    def replace(newEdge:Edge): Unit ={
-//      vertex1 = newEdge.vertex1
-//      vertex2 = newEdge.vertex2
-//    }
-  }
+  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = 0)
 
   case class Triangle(edges:List[Edge]){
     def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
@@ -37,7 +31,6 @@ object Truss {
     println(count)
   }
 
-
   def getTrianglesNoSparkAndSave(rawGraph:RDD[String], outputDir:String, seperator:String): Unit ={
     val graph = addDegreesToGraph(convertGraph(rawGraph, seperator))
 
@@ -56,7 +49,7 @@ object Truss {
     val missedEdges = edgeCombinations
       .join(edgeCombinations)
 
-
+    // triad = two edges that share a node = tringle candidate
     val triads = missedEdges
       .filter(e => e._2._1.vertex2.id < e._2._2.vertex2.id)
       .map( combination => {
@@ -90,7 +83,6 @@ object Truss {
 
     val triadsAndSingleEdges = triads.union(allEdges)
 
-   //reduce2
     val triangles = triadsAndSingleEdges
       .groupByKey()
       .flatMap{p =>
@@ -120,13 +112,10 @@ object Truss {
 
 
     var graphOldCount:Long = 0
-
     var graph = firstGraph
-
     var graphCount = graph.count()
 
     var triangles = getTrianglesNoSpark(graph.map(e => createEdge(e.vertex1, e.vertex2))).repartition(partitioning)
-
     val getTrianglesTime = java.lang.System.currentTimeMillis()
 
     while(graphCount != graphOldCount) {
@@ -158,7 +147,6 @@ object Truss {
     val filterTriangleDegreesTime = java.lang.System.currentTimeMillis()
 
     val components = findRemainingGraphComponents(graph)
-
     val remainingGraphComponentsTime = java.lang.System.currentTimeMillis()
 
     //convert into zone => edge mappings
@@ -271,5 +259,4 @@ object Truss {
       vertex1 + vertex2
     })
   }
-
 }

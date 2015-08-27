@@ -6,10 +6,6 @@ import org.apache.flink.api.scala._
 import org.apache.flink.util.Collector
 import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint
 
-
-
-import scala.concurrent.duration.durationToPair
-
 case class Vertex(id: Int, degree:Int)
 
 case class Edge(vertex1:Vertex,vertex2:Vertex, var triangleCount:Int = -1) {
@@ -76,6 +72,7 @@ object Truss {
 
   def getTriangles(graph:DataSet[Edge], k:Int): DataSet[Triangle] ={
 
+    //triad = two edges that share a node, making a potential triangle
     val triads = graph.join(graph).where("vertex1").equalTo("vertex1").name("create triads")
       .filter(new FilterFunction[(Edge, Edge)] {
       override def filter(t: (Edge, Edge)): Boolean = {
@@ -87,7 +84,6 @@ object Truss {
 
     val allEdges = graph.map(edge => (edge, edge)).name("triangleCalculation: map singlge edges")
 
-    //TODO Parameterization of #nodes?
     val joinStrategy = if (k >= 8) JoinHint.BROADCAST_HASH_SECOND else JoinHint.BROADCAST_HASH_SECOND //REPARTITION_HASH_SECOND
 
     val triangles = triads.join(allEdges, joinStrategy).where(0).equalTo(0) {
@@ -106,13 +102,10 @@ object Truss {
   def calculateTruss(k:Int, firstGraph:DataSet[Edge]): DataSet[(Int, Edge)]={
 
     var graph = firstGraph
-
     val filteredGraph = graph.filter(e => {e.vertex1.degree > k-2 && e.vertex2.degree > k-2}).name("filter too small nodes")
-
     val triangles = getTriangles(filteredGraph, k)
 
     val filteredTriangles = triangles.iterateWithTermination(Int.MaxValue)({triangles =>
-
       val singleEdges = triangles.flatMap(triangle => List(triangle.edge1, triangle.edge2, triangle.edge3)).map((_, 1)).name("prepare triangle count per edge")
 
       val triangleCountPerEdge = singleEdges.groupBy(0).reduce{
@@ -177,9 +170,7 @@ object Truss {
 
         // select the minimum neighbor
         val minEdgeZones = edgeZones.groupBy(0).min(1).name("findRemaingGraphComponent: min neighbor")
-
         val allNeighbors = minEdgeZones.flatMap(edge => List((edge._1.vertex1,  edge._2), ( edge._1.vertex2, edge._2)))
-
         val minNeighbors = allNeighbors.groupBy(0).min(1)
 
         // update if the component of the candidate is smaller

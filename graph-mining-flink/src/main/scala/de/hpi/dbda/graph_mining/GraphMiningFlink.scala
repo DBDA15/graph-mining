@@ -2,18 +2,11 @@ package de.hpi.dbda.graph_mining
 
 import java.io.{File, PrintWriter}
 
-import org.apache.flink.api.common.io.FileInputFormat
-import org.apache.flink.api.java.tuple.Tuple
 import org.apache.flink.api.scala.{DataSet, ExecutionEnvironment}
 import java.io.File
 import org.apache.flink.core.fs.FileSystem.WriteMode
 import org.apache.log4j.{Level, Logger}
 
-import scalax.file.FileSystem
-
-/**
- * Created by rice on 08.06.15.
- */
 object GraphMiningFlink {
 
   def main(args: Array[String]) {
@@ -33,11 +26,9 @@ object GraphMiningFlink {
     val startTime = java.lang.System.currentTimeMillis()
 
     val rawGraph = env.readTextFile(inputPath)
-
     val rawGraphTime = java.lang.System.currentTimeMillis() - startTime
 
     val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
-
     val addDegreesTime = java.lang.System.currentTimeMillis() - startTime - rawGraphTime
 
     var maxTrussesTime = 0.toLong
@@ -90,7 +81,7 @@ object GraphMiningFlink {
     val endTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
     val diffTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
 
-    println("############## overall used time = " + diffTime + " #######################")
+    println("############## overall time = " + diffTime + " #######################")
     println("############## add Degrees time = " + addDegreesTime + " #########################")
     println("############## raw Graph reading time = " + rawGraphTime + " ######################")
 

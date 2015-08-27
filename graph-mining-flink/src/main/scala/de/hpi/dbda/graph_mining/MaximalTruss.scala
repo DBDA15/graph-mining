@@ -16,7 +16,7 @@ object MaximalTruss {
 
     while (k != maxK && k != minK){
 
-      print ("############################ k is " + k +" #################################")
+      print ("############################ current k is " + k +" #################################")
       val trusses = Truss.calculateTruss(k, graph)
 
       val result:DataSet[Edge] = trusses.map{truss =>
@@ -64,7 +64,7 @@ object MaximalTruss {
 
     while (k != maxK && k != minK){
 
-      print ("############################ k is " + k +" #################################")
+      print ("############################ current k is " + k +" #################################")
       val trusses = Truss.calculateTruss(k, newGraph)
 
       result = trusses.map{truss =>

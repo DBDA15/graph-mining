@@ -65,7 +65,6 @@ object GraphMiningSpark extends App {
     var remainingGraphComponentsTime:Long = 0
 
     if (mode.equals("bidirect"))
-    //calculateIncomingOutcomingCount(context, inputPath, args)
       convertToBidirectedGraph(context, inputPath, outputPath, seperator)
 
     if (mode.equals("triangle"))
@@ -103,31 +102,18 @@ object GraphMiningSpark extends App {
     if(mode.equals("clique"))
       CliqueWithTrusses.maximumClique(Truss.convertGraph(context.textFile(inputPath), seperator), outputPath, context).saveAsTextFile(outputPath)
 
-
-    //TODO: Remove - Testing only: calculates the degree of all nodes and orders the result
-    if(mode.equals("degree"))
-      Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath), seperator))
-
-    //TODO: Remove - Testing only: calculates the cliques in graph
-    if(mode.equals("cliqueSingle")) {
-      val cliqueResult = Clique.calculateCliques(Truss.convertGraph(context.textFile(inputPath), seperator).collect(), 0)
-      val printWriter = new PrintWriter(new File(outputPath))
-      cliqueResult.foreach(a => {a.foreach(l => printWriter.print(l + ", "))
-        printWriter.println()})
-      printWriter.close()
+    println("##############################################################################")
+    if (mode.equals("truss")){
+      println("############## add Degrees time = " + (addDegreesTime - startTime).toString + " #########################")
+      println("############## get Triangles time = " + (getTrianglesTime - addDegreesTime).toString + " #########################")
+      println("############## filter Triangles time = " + (filterTriangleDegreesTime - getTrianglesTime).toString + " #########################")
+      println("############## remaining Graph Components time = " + (remainingGraphComponentsTime - filterTriangleDegreesTime).toString + " #########################")
+      println("############## final zone mapping time = " + (endTime - remainingGraphComponentsTime).toString + " #########################")
+      println("##############################################################################")
     }
-
-    println("##############################################################################")
-    println("############## add Degrees time = " + (addDegreesTime - startTime).toString + " #########################")
-    println("############## get Triangles time = " + (getTrianglesTime - addDegreesTime).toString + " #########################")
-    println("############## filter Triangles time = " + (filterTriangleDegreesTime - getTrianglesTime).toString + " #########################")
-    println("############## remaining Graph Components time = " + (remainingGraphComponentsTime - filterTriangleDegreesTime).toString + " #########################")
-    println("############## final zone mapping time = " + (endTime - remainingGraphComponentsTime).toString + " #########################")
-    println("##############################################################################")
-    println("############## overall used time = " + (endTime - startTime).toString + " #######################")
+    println("############## overall time = " + (endTime - startTime).toString + " #######################")
     println("##############################################################################")
   }
-
 
 
   def convertToBidirectedGraph(context:SparkContext, inputPath: String, outputPath: String, seperator:String):  RDD[(GraphMiningSpark.Edge)] ={
