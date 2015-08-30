@@ -1,6 +1,6 @@
-package de.hpi.dbda.graph_mining
+package de.hpi.dbda.graph_mining_spark
 
-import de.hpi.dbda.graph_mining.Truss.Edge
+import de.hpi.dbda.graph_mining_spark.Truss.Edge
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 

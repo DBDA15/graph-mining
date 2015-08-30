@@ -2,10 +2,10 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
   <groupId>de.hpi.dbda.graph_mining</groupId>
-  <artifactId>nodeHistogram</artifactId>
+  <artifactId>graph_mining_spark</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>nodeHistogram</name>
-  <description>nodeHistogram</description>
+  <name>graph_mining_spark</name>
+  <description>graph_mining_spark</description>
   <dependencies>
     <dependency>
       <groupId>org.apache.spark</groupId>

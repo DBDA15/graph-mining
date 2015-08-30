@@ -1,4 +1,4 @@
-package de.hpi.dbda.graph_mining
+package de.hpi.dbda.graph_mining_spark
 
 import org.apache.spark.{RangePartitioner}
 import org.apache.spark.rdd.RDD
