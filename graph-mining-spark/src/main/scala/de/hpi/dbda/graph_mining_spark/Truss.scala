@@ -8,7 +8,11 @@ object Truss {
 
   case class Vertex(id: Int, var degree:Int)
 
-  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = 0)
+  case class Edge(vertex1:Vertex, vertex2:Vertex, var truss:Int = 1, var triangleCount:Int = 0){
+    override def toString():String = {
+     vertex1.id.toString + "\t" + vertex1.degree.toString + "\t" + vertex2.id.toString + "\t" + vertex2.degree.toString
+    }
+  }
 
   case class Triangle(edges:List[Edge]){
     def xor(x:Boolean, y:Boolean) = (x && !y) || (y && !x)
