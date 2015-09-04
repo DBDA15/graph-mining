@@ -19,29 +19,30 @@ Apache Spark Verison
 -----
 
 Launch Parameters:
-* 0: mode [string] -- The portion of the program to be exectued. Valid inputs: truss, maxtruss
+* 0: mode [string] -- The portion of the program to be exectued. Valid inputs: triangle, truss, maxtruss
 * 1: input path [string] -- path to the file containing the graph data, formatted as described above
 * 2: output path [string] -- path where the output should be written to
 * 3: separator [string] -- the separator used between an edge's nodes, as described above
 * 4: partitioning [int] -- number of partitions the data should be split into, should be a multiple of the number of workers available
-* 5: (starting) k value [int] -- k value for the truss portion or initial k value for the maxtruss portion
+* 5: [optional depending on mode] (starting) k value [int] -- k value for the truss mode or initial k value for the maxtruss mode
 
 Example Launch:
 ```
-spark-submit --conf spark.app.name="graph-mining" --class de.hpi.dbda.graph_mining.GraphMiningSpark --master spark://*URL* target/graph-mining-spark-0.0.1-SNAPSHOT.jar maxtruss ../trussMini.txt ../output/ " " 20 28
+spark-submit --conf -Dspark.master=local spark.app.name="graph-mining" --class de.hpi.dbda.graph_mining.GraphMiningSpark target/graph_mining_spark-0.0.1-SNAPSHOT.jar truss ../trussMini.txt ../output/ " " 10 4
 ```
 
 
 Apache Flink Verison
 -----
 
-text
-
 Launch Parameters:
-* text
-* text
+* 0: mode [string] -- The portion of the program to be exectued. Valid inputs: triangle, truss, maxtruss
+* 1: input path [string] -- path to the file containing the graph data, formatted as described above
+* 2: output path [string] -- path where the output should be written to
+* 3: separator [string] -- the separator used between an edge's nodes, as described above
+* 4: [optional depending on mode] (starting) k value [int] -- k value for the truss mode or initial k value for the maxtruss mode
 
 Example Launch:
 ```
-text
+$flink run --parallelism 10 --class de.hpi.dbda.graph_mining.GraphMiningFlink target/graph-mining-flink-1.0-SNAPSHOT.jar truss ../trussMini.txt ../output/ " " 4
 ```
