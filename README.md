@@ -15,6 +15,26 @@ To build a project, execute "Maven Install" in the main project directory.
 
 We recommend using IntelliJ when working on either project.
 
+
+Program Modes
+-----
+
+triangle:
+
+Calculates all unique triangles in the graph.
+
+
+truss:
+
+Calculates all k-trusses in the graph, where k is defined by the user.
+A k-truss is a maximal subgraph in which every edge is part of at least k-2 triangles.
+
+
+maxtruss:
+
+Calculates all trusses with the maximum k value in the graph.
+The initial k value for the algorithm is defined by the user.
+
 Apache Spark Verison
 -----
 
@@ -46,3 +66,33 @@ Example Launch:
 ```
 $flink run --parallelism 10 --class de.hpi.dbda.graph_mining.GraphMiningFlink target/graph-mining-flink-1.0-SNAPSHOT.jar truss ../trussMini.txt ../output/ " " 4
 ```
+
+
+Output
+-----
+
+truss/maxtruss:
+
+The output has one line for each edge that is contained in a truss and looks as follows:
+```
+1 2 3 4 5
+```
+* 1: Truss ID
+* 2: ID of the first vertex
+* 3: Degree of the first vertex
+* 4: ID of the second vertex
+* 5: Degree of the second vertex
+
+
+triangle:
+
+The output has one line for each triangle and looks as follows:
+```
+1 2 3 4 5 6 7 8 9 10  11  12
+```
+Numbers 1-4 represent an edge, as do numbers 5-8, and numbers 9-12.
+Each of these sets represents and edge of the triangle.
+* 1/5/9: ID of the first vertex
+* 2/6/10: Degree of the first vertex
+* 3/7/11: ID of the second vertex
+* 4/8/12: Degree of the second vertex
