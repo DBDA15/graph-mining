@@ -43,14 +43,8 @@ object GraphMiningSpark extends App {
     val mode = args(0)
     val inputPath = args(1)
     val outputPath = args(2)
-    var seperator = "\t"
+    val separator = args(3)
     val partitioning = args(4).toInt
-
-    if (args.length > 3) {
-      seperator = args(3)
-    }
-
-
 
     val conf = new SparkConf()
     conf.setAppName(GraphMiningSpark.getClass.getName)
@@ -65,22 +59,22 @@ object GraphMiningSpark extends App {
     var remainingGraphComponentsTime:Long = 0
 
     if (mode.equals("bidirect"))
-      convertToBidirectedGraph(context, inputPath, outputPath, seperator)
+      convertToBidirectedGraph(context, inputPath, outputPath, separator)
 
     if (mode.equals("triangle"))
-      Truss.getTrianglesAndSave(context.textFile(inputPath, partitioning), outputPath, seperator)
+      Truss.getTrianglesAndSave(context.textFile(inputPath, partitioning), outputPath, separator)
 
     if(mode.equals("triangleNoSpark"))
-      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, partitioning), outputPath, seperator)
+      Truss.getTrianglesNoSparkAndSave(context.textFile(inputPath, partitioning), outputPath, separator)
 
     if (mode.equals("truss")){
       val trussOut = outputPath + "/truss"
 
-      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, partitioning), seperator))
+      val graph:RDD[Truss.Edge] = Truss.addDegreesToGraph(Truss.convertGraph(context.textFile(inputPath, partitioning), separator))
 
        addDegreesTime = java.lang.System.currentTimeMillis()
 
-      val trussesResult = Truss.calculateTrusses(args(4).toInt, graph, partitioning)
+      val trussesResult = Truss.calculateTrusses(args(5).toInt - 2, graph, partitioning)
       getTrianglesTime = trussesResult._2
       filterTriangleDegreesTime = trussesResult._3
       remainingGraphComponentsTime = trussesResult._4
@@ -91,16 +85,13 @@ object GraphMiningSpark extends App {
 
     if(mode.equals("maxtruss")) {
       val outputFile = outputPath + "/maximalTruss/truss"
-      val result = MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, partitioning), seperator), context, outputPath, args(5), partitioning)
+      val result = MaximalTruss.maximumTruss(Truss.convertGraph(context.textFile(inputPath, partitioning), separator), context, outputPath, args(5), partitioning)
       endTime = java.lang.System.currentTimeMillis()
       result.saveAsTextFile(outputFile)
     }
 
     if(mode.equals("histo"))
       calculateIncomingOutcomingCount(context,inputPath, outputPath)
-
-    if(mode.equals("clique"))
-      CliqueWithTrusses.maximumClique(Truss.convertGraph(context.textFile(inputPath), seperator), outputPath, context).saveAsTextFile(outputPath)
 
     println("##############################################################################")
     if (mode.equals("truss")){

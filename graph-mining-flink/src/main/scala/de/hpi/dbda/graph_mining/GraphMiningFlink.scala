@@ -14,12 +14,9 @@ object GraphMiningFlink {
     val mode = args(0)
     val inputPath = args(1)
     val outputPath = args(2)
-    var seperator = "\t"
+    val separator = args(3)
     var k = 10
 
-    if (args.length > 3) {
-      seperator = args(3)
-    }
     val env = ExecutionEnvironment.getExecutionEnvironment
 
 
@@ -28,7 +25,7 @@ object GraphMiningFlink {
     val rawGraph = env.readTextFile(inputPath)
     val rawGraphTime = java.lang.System.currentTimeMillis() - startTime
 
-    val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, seperator))
+    val dataset = Truss.addDegrees(Truss.convertGraph(rawGraph, separator))
     val addDegreesTime = java.lang.System.currentTimeMillis() - startTime - rawGraphTime
 
     var maxTrussesTime = 0.toLong
@@ -78,7 +75,6 @@ object GraphMiningFlink {
 
     env.execute("Flink Scala Graph Mining")
 
-    val endTime = java.lang.System.currentTimeMillis() - addDegreesTime - startTime - rawGraphTime
     val diffTime = java.lang.System.currentTimeMillis() - maxTrussesTime - addDegreesTime - startTime - rawGraphTime
 
     println("############## overall time = " + diffTime + " #######################")
