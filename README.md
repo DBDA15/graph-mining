@@ -48,7 +48,7 @@ Launch Parameters:
 
 Example Launch:
 ```
-spark-submit --conf -Dspark.master=local spark.app.name="graph-mining" --class de.hpi.dbda.graph_mining.GraphMiningSpark target/graph_mining_spark-0.0.1-SNAPSHOT.jar truss ../trussMini.txt ../output/ " " 10 4
+spark-submit --conf -Dspark.master=local spark.app.name="graph-mining" --class de.hpi.dbda.graph_mining_spark.GraphMiningSpark target/graph_mining_spark-0.0.1-SNAPSHOT.jar truss ../trussMini.txt ../output/ " " 10 4
 ```
 
 
